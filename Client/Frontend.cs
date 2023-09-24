@@ -1,7 +1,5 @@
 ﻿using Google.Protobuf.WellKnownTypes;
-using Grpc.Core;
 using Grpc.Net.Client;
-using Utils;
 
 namespace Client;
 

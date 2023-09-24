@@ -153,7 +153,7 @@ class Launcher
             if (command is PServerCommand)
             {
                 var c = command as PServerCommand ?? throw new Exception("Invalid command");
-                _servers.Add(new(c.Identifier, c.Type, c.URL));
+                _servers.Add(new(c.Identifier, ServerType.TransactionManager, c.URL));
             }
             else if (command is PClientCommand)
             {
@@ -184,8 +184,11 @@ class Launcher
         // Create list of Transaction Manager URLs
         string transactionManagerURLS = string.Join(",", _servers.Where(server => server.Item2 == ServerType.TransactionManager).Select(server => server.Item3));
 
-        // Spawn processes
+        // Spawn Clients
         _processes.AddRange(_clients.Select(client => _processRunner.Run("Client", "dotnet", $"run {client.Item1} {client.Item2} {transactionManagerURLS}")));
+
+        // Spawn Transaction Managers
+        _processes.AddRange(_servers.Where(server => server.Item2 == ServerType.TransactionManager).Select(server => _processRunner.Run("TransactionManager", "dotnet", $"run {server.Item1} {server.Item3}")));
 
         // Prompt user to kill all spawned processes.
         Console.WriteLine("Press any key to kill all processes.");

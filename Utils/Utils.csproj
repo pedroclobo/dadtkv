@@ -22,7 +22,7 @@
 
   <ItemGroup>
     <Protobuf Include="Protos\Client.proto">
-      <GrpcServices>Client</GrpcServices>
+      <GrpcServices>Both</GrpcServices>
     </Protobuf>
   </ItemGroup>
 

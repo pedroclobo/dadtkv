@@ -5,11 +5,18 @@ VisualStudioVersion = 17.7.34031.279
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Client", "Client\Client.csproj", "{E6162B82-7A1D-42C3-B498-27F10BDBC4DD}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Server", "Server\Server.csproj", "{1046AB84-FBB7-40D2-9882-8BD5757AC6BA}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TransactionManager", "TransactionManager\TransactionManager.csproj", "{1046AB84-FBB7-40D2-9882-8BD5757AC6BA}"
+	ProjectSection(ProjectDependencies) = postProject
+		{8156331E-B5DE-41AB-A920-F57F8E089F9B} = {8156331E-B5DE-41AB-A920-F57F8E089F9B}
+	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Launcher", "Launcher\Launcher.csproj", "{F20CA3C4-E9DB-4294-8EE6-1C18540A5B37}"
+	ProjectSection(ProjectDependencies) = postProject
+		{1046AB84-FBB7-40D2-9882-8BD5757AC6BA} = {1046AB84-FBB7-40D2-9882-8BD5757AC6BA}
+		{E6162B82-7A1D-42C3-B498-27F10BDBC4DD} = {E6162B82-7A1D-42C3-B498-27F10BDBC4DD}
+	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Utils", "Utils\Utils.csproj", "{8156331E-B5DE-41AB-A920-F57F8E089F9B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Utils", "Utils\Utils.csproj", "{8156331E-B5DE-41AB-A920-F57F8E089F9B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
