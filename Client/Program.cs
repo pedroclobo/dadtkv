@@ -1,29 +1,38 @@
-﻿namespace Client
+﻿namespace Client;
+
+class Client
 {
-    class Client
+    static void Main(string[] args)
     {
-        static void Main(string[] args)
+        if (args.Length != 3)
         {
-            if (args.Length != 3)
-            {
-                PrintHelp();
-                return;
-            }
-
-            var identifier = args[0];
-            var script = args[1];
-            var serverURLs = args[2];
-
-            Console.WriteLine($"I am a client with identifier: {identifier}");
-            Console.WriteLine($"Running script: {script}");
-            Console.WriteLine($"Transaction Manager URLs: {serverURLs}");
-
-            Console.ReadLine();
+            PrintHelp();
+            return;
         }
 
-        private static void PrintHelp()
-        {
-            Console.WriteLine("Usage: Client.exe <identifier> <script> <server_urls>");
-        }
+        var identifier = args[0];
+        var script = args[1];
+        var serverURLs = args[2];
+
+        Console.WriteLine($"I am a client with identifier: {identifier}");
+        Console.WriteLine($"Running script: {script}");
+        Console.WriteLine($"Transaction Manager URLs: {serverURLs}");
+
+        // Spawn Frontend and Parser
+        var frontend = new Frontend(identifier, serverURLs);
+        var parser = new Parser(frontend, "../Config/Client/" + script);
+
+        parser.Parse();
+
+        Console.WriteLine("Press any key to exit...");
+        Console.ReadLine();
+
+        // Shutdown Grpc Channels
+        frontend.Shutdown();
+    }
+
+    private static void PrintHelp()
+    {
+        Console.WriteLine("Usage: Client.exe <identifier> <script> <server_urls>");
     }
 }

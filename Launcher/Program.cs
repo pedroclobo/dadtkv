@@ -162,15 +162,18 @@ class Launcher
             }
             else if (command is SCommand)
             {
-                _timeSlots = (command as SCommand).TimeSlots;
+                var c = command as SCommand ?? throw new Exception("Invalid command");
+                _timeSlots = c.TimeSlots;
             }
             else if (command is DCommand)
             {
-                _duration = (command as DCommand).Duration;
+                var c = command as DCommand ?? throw new Exception("Invalid command");
+                _duration = c.Duration;
             }
             else if (command is TCommand)
             {
-                _wallTime = (command as TCommand).WallTime;
+                var c = command as TCommand ?? throw new Exception("Invalid command");
+                _wallTime = c.WallTime;
             }
             else if (command is FCommand)
             {
