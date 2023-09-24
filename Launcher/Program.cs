@@ -132,6 +132,10 @@ class Launcher
 
     private static ProcessRunner _processRunner = new ProcessRunner();
     private static List<Tuple<string, string>> _clients = new List<Tuple<string, string>>();
+    private static List<Tuple<string, ServerType, string>> _servers = new List<Tuple<string, ServerType, string>>();
+
+    private static List<string> _transactionManagerURLS = new List<string>();
+
     private static List<Process> _processes = new List<Process>();
     static void Main(string[] args)
     {
@@ -148,12 +152,13 @@ class Launcher
             Console.WriteLine(command);
             if (command is PServerCommand)
             {
-                continue;
+                var c = command as PServerCommand ?? throw new Exception("Invalid command");
+                _servers.Add(new(c.Identifier, c.Type, c.URL));
             }
             else if (command is PClientCommand)
             {
-                var c = command as PClientCommand;
-                _clients.Add(new Tuple<string, string>(c.Identifier, c.Script));
+                var c = command as PClientCommand ?? throw new Exception("Invalid command");
+                _clients.Add(new(c.Identifier, c.Script));
             }
             else if (command is SCommand)
             {
@@ -173,8 +178,11 @@ class Launcher
             }
         }
 
+        // Create list of Transaction Manager URLs
+        string transactionManagerURLS = string.Join(",", _servers.Where(server => server.Item2 == ServerType.TransactionManager).Select(server => server.Item3));
+
         // Spawn processes
-        _processes.AddRange(_clients.Select(client => _processRunner.Run("Client", "dotnet", $"run {client.Item1} {client.Item2}")));
+        _processes.AddRange(_clients.Select(client => _processRunner.Run("Client", "dotnet", $"run {client.Item1} {client.Item2} {transactionManagerURLS}")));
 
         // Prompt user to kill all spawned processes.
         Console.WriteLine("Press any key to kill all processes.");
