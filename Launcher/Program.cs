@@ -61,7 +61,29 @@ class Parser
                     commands.Add(new TCommand(tokens[1]));
                     break;
 
+                // F 1 N N N N N N (TM1,TM2) (lease3,LM2)
                 case "F":
+                    var timeSlot = int.Parse(tokens[1]);
+
+                    // Build string with N's or C's separated by spaces
+                    string faulty = "";
+                    var i = 2;
+                    while (!tokens[i].StartsWith("("))
+                    {
+                        faulty += tokens[i] + " ";
+                        i++;
+                    }
+
+                    // Build list of suspect pairs
+                    var suspectPairs = new List<string>();
+                    while (i < tokens.Length)
+                    {
+                        suspectPairs.Add(tokens[i]);
+                        i++;
+                    }
+
+                    commands.Add(new FCommand(timeSlot, faulty, suspectPairs.ToArray()));
+
                     break;
 
                 default:
