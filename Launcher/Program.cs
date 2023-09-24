@@ -126,13 +126,13 @@ class ProcessRunner
 }
 class Launcher
 {
-    private static int? timeSlots = null;
-    private static int? duration = null;
-    private static DateTime? wallTime = null;
+    private static int? _timeSlots = null;
+    private static int? _duration = null;
+    private static DateTime? _wallTime = null;
 
-    private static ProcessRunner processRunner = new ProcessRunner();
-    private static List<Tuple<string, string>> clients = new List<Tuple<string, string>>();
-    private static List<Process> processes = new List<Process>();
+    private static ProcessRunner _processRunner = new ProcessRunner();
+    private static List<Tuple<string, string>> _clients = new List<Tuple<string, string>>();
+    private static List<Process> _processes = new List<Process>();
     static void Main(string[] args)
     {
         if (args.Length != 1)
@@ -153,19 +153,19 @@ class Launcher
             else if (command is PClientCommand)
             {
                 var c = command as PClientCommand;
-                clients.Add(new Tuple<string, string>(c.Identifier, c.Script));
+                _clients.Add(new Tuple<string, string>(c.Identifier, c.Script));
             }
             else if (command is SCommand)
             {
-                timeSlots = (command as SCommand).TimeSlots;
+                _timeSlots = (command as SCommand).TimeSlots;
             }
             else if (command is DCommand)
             {
-                duration = (command as DCommand).Duration;
+                _duration = (command as DCommand).Duration;
             }
             else if (command is TCommand)
             {
-                wallTime = (command as TCommand).WallTime;
+                _wallTime = (command as TCommand).WallTime;
             }
             else if (command is FCommand)
             {
@@ -174,12 +174,12 @@ class Launcher
         }
 
         // Spawn processes
-        processes.AddRange(clients.Select(client => processRunner.Run("Client", "dotnet", $"run {client.Item1} {client.Item2}")));
+        _processes.AddRange(_clients.Select(client => _processRunner.Run("Client", "dotnet", $"run {client.Item1} {client.Item2}")));
 
         // Prompt user to kill all spawned processes.
         Console.WriteLine("Press any key to kill all processes.");
         Console.ReadLine();
-        processes.ForEach(process => process.Kill());
+        _processes.ForEach(process => process.Kill());
     }
 
     private static void PrintHelp()
