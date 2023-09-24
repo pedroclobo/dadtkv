@@ -1,0 +1,6 @@
+P TM1 T http://localhost:5001
+P TM2 T http://localhost:5002
+P C1 C SimpleScript
+S 10
+T 00:00:00
+D 5000
