@@ -40,14 +40,24 @@ public class Parser
                             throw new Exception("Invalid T command");
                         }
 
-                        var read = new List<string>();
-                        var write = new List<DadInt>();
-                        var command = new TCommand(read, write);
+                        // Split read keys
+                        var read = tokens[1].Trim('(', ')').Split(",").ToList();
+                        read.RemoveAll(s => s == ""); // Remove all empty strings
 
+                        // Split write <key, value> pairs
+                        var write = new List<Utils.DadInteger>();
+                        var pairs = tokens[2].Trim('(', ')').Split(">,<").ToList();
+                        pairs.RemoveAll(s => s == ""); // Remove all empty strings
+                        foreach (var token in pairs)
+                        {
+                            write.Add(Utils.DadInteger.Parse(token));
+                        }
+
+                        var command = new TCommand(read, write);
                         var result = await _frontend.TxSubmit(read, write);
 
-                        Console.WriteLine(command);
-                        Console.WriteLine(result);
+                        Console.WriteLine("Request: " + command.ToString());
+                        Console.WriteLine("Reply: [" + string.Join(", ", result) + "]");
 
                         break;
 

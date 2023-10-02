@@ -29,6 +29,9 @@ class TransactionManager
 
             server.Start();
 
+            // Configuring HTTP for client connections in Register method
+            AppContext.SetSwitch("System.Net.Http.SocketsHttpHandler.Http2UnencryptedSupport", true);
+
             Console.WriteLine($"{identifier} listening on host {host} and port {port}");
             Console.WriteLine("Press any key to exit...");
             Console.ReadLine();

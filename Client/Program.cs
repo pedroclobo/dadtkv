@@ -11,7 +11,7 @@ class Client
         }
 
         var identifier = args[0];
-        var script = args[1];
+        var script = "../Config/Client/" + args[1];
         var serverURLs = args[2];
 
         Console.WriteLine($"I am a client with identifier: {identifier}");
@@ -20,7 +20,7 @@ class Client
 
         // Spawn Frontend and Parser
         var frontend = new Frontend(identifier, serverURLs);
-        var parser = new Parser(frontend, "../Config/Client/" + script);
+        var parser = new Parser(frontend, script);
 
         parser.Parse();
 

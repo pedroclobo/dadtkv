@@ -1,5 +1,6 @@
 ﻿using Google.Protobuf.WellKnownTypes;
 using Grpc.Net.Client;
+using Utils;
 
 namespace Client;
 
@@ -25,24 +26,21 @@ public class Frontend
             _clients.Add(new DADTKVClientService.DADTKVClientServiceClient(channel));
         }
     }
-    public async Task<List<DadInt>> TxSubmit(List<string> read, List<DadInt> write)
+    public async Task<List<DadInteger>> TxSubmit(List<string> read, List<DadInteger> write)
     {
         var request = new TxSubmitRequest
         {
             ClientId = _identifier,
             Read = { read },
-            Write = { write }
+            Write = { write.Select(d => d.ToProtobuf()) }
         };
 
-        var result = new List<DadInt>();
-        foreach (var client in _clients)
-        {
-            var response = await client.TxSubmitAsync(request);
+        var result = new List<DadInteger>();
 
-            foreach (var value in response.Values)
-            {
-                result.Add(value);
-            }
+        var response = await _clients[0].TxSubmitAsync(request);
+        foreach (var value in response.Values)
+        {
+            result.Add(DadInteger.FromProtobuf(value));
         }
 
         return result;
