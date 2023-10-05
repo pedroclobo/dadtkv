@@ -128,7 +128,7 @@ class Launcher
 {
     private static int? _timeSlots = null;
     private static int? _duration = null;
-    private static DateTime? _wallTime = null;
+    private static TimeSpan? _wallTime = null;
 
     private static ProcessRunner _processRunner = new ProcessRunner();
     private static List<Tuple<string, string>> _clients = new List<Tuple<string, string>>();
@@ -185,10 +185,11 @@ class Launcher
         string transactionManagerURLS = string.Join(",", _servers.Where(server => server.Item2 == ServerType.TransactionManager).Select(server => server.Item3));
 
         // Spawn Clients
-        _processes.AddRange(_clients.Select(client => _processRunner.Run("Client", "dotnet", $"run {client.Item1} {client.Item2} {transactionManagerURLS}")));
+        Console.WriteLine(_wallTime);
+        _processes.AddRange(_clients.Select(client => _processRunner.Run("Client", "dotnet", $"run {client.Item1} {client.Item2} {transactionManagerURLS} {_wallTime}")));
 
         // Spawn Transaction Managers
-        _processes.AddRange(_servers.Where(server => server.Item2 == ServerType.TransactionManager).Select(server => _processRunner.Run("TransactionManager", "dotnet", $"run {server.Item1} {server.Item3} {transactionManagerURLS}")));
+        _processes.AddRange(_servers.Where(server => server.Item2 == ServerType.TransactionManager).Select(server => _processRunner.Run("TransactionManager", "dotnet", $"run {server.Item1} {server.Item3} {transactionManagerURLS} {_wallTime}")));
 
         // Prompt user to kill all spawned processes.
         Console.WriteLine("Press any key to kill all processes.");

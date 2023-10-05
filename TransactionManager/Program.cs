@@ -9,7 +9,7 @@ class TransactionManager
     {
         try
         {
-            if (args.Length != 3)
+            if (args.Length != 4)
             {
                 PrintHelp();
                 return;
@@ -24,6 +24,8 @@ class TransactionManager
             var transactionManagerURLS = args[2].Split(",").ToList();
             transactionManagerURLS.Remove(args[1]); // Remove own URL
 
+            var wallTime = TimeSpan.Parse(args[3]);
+
             State state = new State();
             URBFrontend urbFrontend = new URBFrontend(identifier, transactionManagerURLS);
 
@@ -37,12 +39,28 @@ class TransactionManager
                 Ports = { new Grpc.Core.ServerPort(host, port, Grpc.Core.ServerCredentials.Insecure) }
             };
 
+            // Wait for wall time
+            var now = DateTime.Now;
+            var waitTime = new DateTime(now.Year, now.Month, now.Day, wallTime.Hours, wallTime.Minutes, wallTime.Minutes) - now;
+
+            if (waitTime.TotalMilliseconds > 0)
+            {
+                Console.WriteLine($"Waiting for {waitTime.TotalMilliseconds}ms");
+                Thread.Sleep(waitTime);
+            }
+            else
+            {
+                Console.WriteLine("Invalid time");
+                return;
+            }
+
             server.Start();
 
             // Configuring HTTP for client connections in Register method
             AppContext.SetSwitch("System.Net.Http.SocketsHttpHandler.Http2UnencryptedSupport", true);
 
             Console.WriteLine($"{identifier} listening on host {host} and port {port}");
+            Console.WriteLine($"Starting at: {wallTime}");
             Console.WriteLine("Press any key to exit...");
             Console.ReadLine();
 
@@ -57,6 +75,6 @@ class TransactionManager
     }
     private static void PrintHelp()
     {
-        Console.WriteLine("Usage: TransactionManager.exe <identifier> <URL> <TM-URLS>");
+        Console.WriteLine("Usage: TransactionManager.exe <identifier> <URL> <TM-URLS> <wall_time");
     }
 }

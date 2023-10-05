@@ -2,10 +2,10 @@
 {
     public class TCommand: Command
     {
-        public DateTime WallTime { get; set; }
+        public TimeSpan WallTime { get; set; }
         public TCommand(string time)
         {
-            WallTime = DateTime.Parse(time);
+            WallTime = TimeSpan.Parse(time);
         }
 
         public override string ToString()
