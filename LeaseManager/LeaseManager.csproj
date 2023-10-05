@@ -1,20 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <OutputType>Exe</OutputType>
     <TargetFramework>net6.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="Protos\Client.proto" />
-    <None Remove="Protos\Lease.proto" />
-    <None Remove="Protos\URB.proto" />
-    <None Remove="Protos\Common.proto" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="Google.Protobuf" Version="3.24.3" />
+    <PackageReference Include="Google.Protobuf" Version="3.24.4" />
     <PackageReference Include="Grpc.Core" Version="2.46.6" />
     <PackageReference Include="Grpc.Net.Client" Version="2.57.0" />
     <PackageReference Include="Grpc.Tools" Version="2.58.0">
@@ -24,10 +18,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Protobuf Include="Protos\Lease.proto" GrpcServices="Both" />
-    <Protobuf Include="Protos\Client.proto" GrpcServices="Both" />
-    <Protobuf Include="Protos\URB.proto" GrpcServices="Both" />
-    <Protobuf Include="Protos\Common.proto" GrpcServices="Both" />
+    <ProjectReference Include="..\Utils\Utils.csproj" />
   </ItemGroup>
 
 </Project>

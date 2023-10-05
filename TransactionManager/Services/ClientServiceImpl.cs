@@ -7,15 +7,19 @@ public class DADTKVClientServiceImpl : DADTKVClientService.DADTKVClientServiceBa
 {
     private State _state;
     private URBFrontend _urbFrontend;
-    public DADTKVClientServiceImpl(State state, URBFrontend urbFrontend)
+    private LeaseFrontend _leaseFrontend;
+    public DADTKVClientServiceImpl(State state, URBFrontend urbFrontend, LeaseFrontend leaseFrontend)
     {
         _state = state;
         _urbFrontend = urbFrontend;
+        _leaseFrontend = leaseFrontend;
     }
     public async override Task<TxSubmitResponse> TxSubmit(TxSubmitRequest request, ServerCallContext context)
     {
         try
         {
+            // TODO: check for lease and ask for lease
+
             // Perform Writes
             foreach (var dadInt in request.Write)
             {

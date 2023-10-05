@@ -1,8 +1,6 @@
-﻿using TransactionManager.Frontends;
-using TransactionManager.Services;
+﻿namespace LeaseManager;
 
-namespace TransactionManager;
-class TransactionManager
+class LeaseManager
 {
     static void Main(string[] args)
     {
@@ -20,25 +18,25 @@ class TransactionManager
             string host = hostnameAndPort[0];
             int port = int.Parse(hostnameAndPort[1]);
 
-            var transactionManagerURLS = args[2].Split(",").ToList();
-            transactionManagerURLS.Remove(args[1]); // Remove own URL
+            var leaseManagerURLS = args[2].Split(",").ToList();
+            leaseManagerURLS.Remove(args[1]); // Remove own URL
 
-            var leaseManagerURLS = args[3].Split(",").ToList();
+            var transactionManagerURLS = args[3].Split(",").ToList();
 
             var wallTime = TimeSpan.Parse(args[4]);
 
-            State state = new State();
-            URBFrontend urbFrontend = new URBFrontend(identifier, transactionManagerURLS);
+            // State state = new State();
+            // URBFrontend urbFrontend = new URBFrontend(identifier, transactionManagerURLS);
 
-            // Spawn Transaction Manager
-            Grpc.Core.Server server = new Grpc.Core.Server
-            {
-                Services = {
-                    DADTKVClientService.BindService(new DADTKVClientServiceImpl(state, urbFrontend, new LeaseFrontend(identifier, leaseManagerURLS))),
-                    URBService.BindService(new URBServiceImpl(identifier, state))
-                },
-                Ports = { new Grpc.Core.ServerPort(host, port, Grpc.Core.ServerCredentials.Insecure) }
-            };
+            // // Spawn Lease Manager
+            // Grpc.Core.Server server = new Grpc.Core.Server
+            // {
+            //     Services = {
+            //         DADTKVClientService.BindService(new DADTKVClientServiceImpl(state, urbFrontend)),
+            //         URBService.BindService(new URBServiceImpl(identifier, state))
+            //     },
+            //     Ports = { new Grpc.Core.ServerPort(host, port, Grpc.Core.ServerCredentials.Insecure) }
+            // };
 
             // Wait for wall time
             var now = DateTime.Now;
@@ -55,7 +53,7 @@ class TransactionManager
                 return;
             }
 
-            server.Start();
+// server.Start();
 
             // Configuring HTTP for client connections in Register method
             AppContext.SetSwitch("System.Net.Http.SocketsHttpHandler.Http2UnencryptedSupport", true);
@@ -65,9 +63,9 @@ class TransactionManager
             Console.WriteLine("Press any key to exit...");
             Console.ReadLine();
 
-            // Shutdown Server and Services
-            urbFrontend.Shutdown();
-            server.ShutdownAsync().Wait();
+            //// Shutdown Server and Services
+            //urbFrontend.Shutdown();
+            //server.ShutdownAsync().Wait();
         }
         catch (Exception e)
         {
@@ -76,6 +74,7 @@ class TransactionManager
     }
     private static void PrintHelp()
     {
-        Console.WriteLine("Usage: TransactionManager.exe <identifier> <URL> <TM-URLS> <LM-URLS> <wall_time");
+        Console.WriteLine("Usage: LeaseManager.exe <identifier> <URL> <LM-URLS> <TM-URLS> <wall_time");
     }
 }
+

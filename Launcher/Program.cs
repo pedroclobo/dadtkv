@@ -134,8 +134,6 @@ class Launcher
     private static List<Tuple<string, string>> _clients = new List<Tuple<string, string>>();
     private static List<Tuple<string, ServerType, string>> _servers = new List<Tuple<string, ServerType, string>>();
 
-    private static List<string> _transactionManagerURLS = new List<string>();
-
     private static List<Process> _processes = new List<Process>();
     static void Main(string[] args)
     {
@@ -153,7 +151,14 @@ class Launcher
             if (command is PServerCommand)
             {
                 var c = command as PServerCommand ?? throw new Exception("Invalid command");
-                _servers.Add(new(c.Identifier, ServerType.TransactionManager, c.URL));
+                if (c.Type == ServerType.LeaseManager)
+                {
+                    _servers.Add(new(c.Identifier, ServerType.LeaseManager, c.URL));
+                }
+                else if (c.Type == ServerType.TransactionManager)
+                {
+                    _servers.Add(new(c.Identifier, ServerType.TransactionManager, c.URL));
+                }
             }
             else if (command is PClientCommand)
             {
@@ -184,12 +189,18 @@ class Launcher
         // Create list of Transaction Manager URLs
         string transactionManagerURLS = string.Join(",", _servers.Where(server => server.Item2 == ServerType.TransactionManager).Select(server => server.Item3));
 
+        // Create list of Lease Manager URLs
+        string leaseManagerURLS = string.Join(",", _servers.Where(server => server.Item2 == ServerType.LeaseManager).Select(server => server.Item3));
+
         // Spawn Clients
         Console.WriteLine(_wallTime);
         _processes.AddRange(_clients.Select(client => _processRunner.Run("Client", "dotnet", $"run {client.Item1} {client.Item2} {transactionManagerURLS} {_wallTime}")));
 
         // Spawn Transaction Managers
-        _processes.AddRange(_servers.Where(server => server.Item2 == ServerType.TransactionManager).Select(server => _processRunner.Run("TransactionManager", "dotnet", $"run {server.Item1} {server.Item3} {transactionManagerURLS} {_wallTime}")));
+        _processes.AddRange(_servers.Where(server => server.Item2 == ServerType.TransactionManager).Select(server => _processRunner.Run("TransactionManager", "dotnet", $"run {server.Item1} {server.Item3} {transactionManagerURLS} {leaseManagerURLS} {_wallTime}")));
+
+        // Spawn Lease Managers
+        _processes.AddRange(_servers.Where(server => server.Item2 == ServerType.LeaseManager).Select(server => _processRunner.Run("LeaseManager", "dotnet", $"run {server.Item1} {server.Item3} {leaseManagerURLS} {transactionManagerURLS} {_wallTime}")));
 
         // Prompt user to kill all spawned processes.
         Console.WriteLine("Press any key to kill all processes.");
