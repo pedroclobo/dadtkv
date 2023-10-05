@@ -188,7 +188,7 @@ class Launcher
         _processes.AddRange(_clients.Select(client => _processRunner.Run("Client", "dotnet", $"run {client.Item1} {client.Item2} {transactionManagerURLS}")));
 
         // Spawn Transaction Managers
-        _processes.AddRange(_servers.Where(server => server.Item2 == ServerType.TransactionManager).Select(server => _processRunner.Run("TransactionManager", "dotnet", $"run {server.Item1} {server.Item3}")));
+        _processes.AddRange(_servers.Where(server => server.Item2 == ServerType.TransactionManager).Select(server => _processRunner.Run("TransactionManager", "dotnet", $"run {server.Item1} {server.Item3} {transactionManagerURLS}")));
 
         // Prompt user to kill all spawned processes.
         Console.WriteLine("Press any key to kill all processes.");

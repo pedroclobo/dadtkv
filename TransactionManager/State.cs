@@ -7,10 +7,17 @@
         {
             _data = new Dictionary<string, int>();
         }
-        public void Add(string key, int value)
+        public void Set(string key, int value)
         {
-            Console.WriteLine("Added {0} with value {1}", key, value);
-            _data.Add(key, value);
+            Console.WriteLine("Setting key {0} with value {1}", key, value);
+            if (!_data.ContainsKey(key))
+            {
+                _data.Add(key, value);
+            }
+            else
+            {
+                _data[key] = value;
+            }
         }
         public int Get(string key)
         {
@@ -18,7 +25,7 @@
             {
                 throw new Exception("Key not found: " + key);
             }
-            Console.WriteLine("Got {0} with value {1}", key, _data[key]);
+            Console.WriteLine("Retrieved key {0} with value {1}", key, _data[key]);
             return _data[key];
         }
     }

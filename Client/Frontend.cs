@@ -3,7 +3,6 @@ using Grpc.Net.Client;
 using Utils;
 
 namespace Client;
-
 public class Frontend
 {
     private string _identifier;

@@ -1,0 +1,6 @@
+﻿syntax = "proto3";
+
+message DadInt {
+	string key = 1;
+	int32 value = 2;
+}

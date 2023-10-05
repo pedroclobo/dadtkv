@@ -1,15 +1,11 @@
 ﻿syntax = "proto3";
 
 import "google/protobuf/empty.proto";
+import "Protos/Common.proto";
 
 service DADTKVClientService {
 	rpc TxSubmit(TxSubmitRequest) returns (TxSubmitResponse);
 	rpc Status(google.protobuf.Empty) returns (StatusResponse);
-}
-
-message DadInt {
-	string key = 1;
-	int32 value = 2;
 }
 
 message TxSubmitRequest  {

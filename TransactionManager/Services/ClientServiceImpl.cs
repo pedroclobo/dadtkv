@@ -1,22 +1,25 @@
 ﻿using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
+using TransactionManager.Frontends;
 
 namespace TransactionManager.Services;
 public class DADTKVClientServiceImpl : DADTKVClientService.DADTKVClientServiceBase
 {
     private State _state;
-    public DADTKVClientServiceImpl()
+    private URBFrontend _urbFrontend;
+    public DADTKVClientServiceImpl(State state, URBFrontend urbFrontend)
     {
-        _state = new State();
+        _state = state;
+        _urbFrontend = urbFrontend;
     }
-    public override Task<TxSubmitResponse> TxSubmit(TxSubmitRequest request, ServerCallContext context)
+    public async override Task<TxSubmitResponse> TxSubmit(TxSubmitRequest request, ServerCallContext context)
     {
         try
         {
             // Perform Writes
             foreach (var dadInt in request.Write)
             {
-                _state.Add(dadInt.Key, dadInt.Value);
+                _state.Set(dadInt.Key, dadInt.Value);
             }
 
             // Perform Reads
@@ -26,14 +29,22 @@ public class DADTKVClientServiceImpl : DADTKVClientService.DADTKVClientServiceBa
                 values.Add(new DadInt { Key = key, Value = _state.Get(key) });
             }
 
-            return Task.FromResult(new TxSubmitResponse { Values = { values } });
+            // Only propagate write operations
+            if (request.Write.Count > 0)
+            {
+                await _urbFrontend.URBDeliver(request);
+            }
+
+            Console.WriteLine("Sending reply to client");
+
+            return new TxSubmitResponse { Values = { values } };
         }
         catch (Exception e)
         {
             Console.WriteLine(e.Message);
         }
 
-        return Task.FromResult(new TxSubmitResponse());
+        return new TxSubmitResponse();
     }
     public override Task<StatusResponse> Status(Empty request, ServerCallContext context)
     {

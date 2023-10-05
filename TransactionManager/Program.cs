@@ -1,4 +1,5 @@
-﻿using TransactionManager.Services;
+﻿using TransactionManager.Frontends;
+using TransactionManager.Services;
 
 namespace TransactionManager;
 
@@ -8,7 +9,7 @@ class TransactionManager
     {
         try
         {
-            if (args.Length != 2)
+            if (args.Length != 3)
             {
                 PrintHelp();
                 return;
@@ -20,10 +21,19 @@ class TransactionManager
             string host = hostnameAndPort[0];
             int port = int.Parse(hostnameAndPort[1]);
 
+            var transactionManagerURLS = args[2].Split(",").ToList();
+            transactionManagerURLS.Remove(args[1]); // Remove own URL
+
+            State state = new State();
+            URBFrontend urbFrontend = new URBFrontend(identifier, transactionManagerURLS);
+
             // Spawn Transaction Manager
             Grpc.Core.Server server = new Grpc.Core.Server
             {
-                Services = { DADTKVClientService.BindService(new DADTKVClientServiceImpl()) },
+                Services = {
+                    DADTKVClientService.BindService(new DADTKVClientServiceImpl(state, urbFrontend)),
+                    URBService.BindService(new URBServiceImpl(identifier, state))
+                },
                 Ports = { new Grpc.Core.ServerPort(host, port, Grpc.Core.ServerCredentials.Insecure) }
             };
 
@@ -36,9 +46,9 @@ class TransactionManager
             Console.WriteLine("Press any key to exit...");
             Console.ReadLine();
 
-            // Shutdown Server
+            // Shutdown Server and Services
+            urbFrontend.Shutdown();
             server.ShutdownAsync().Wait();
-
         }
         catch (Exception e)
         {
@@ -47,6 +57,6 @@ class TransactionManager
     }
     private static void PrintHelp()
     {
-        Console.WriteLine("Usage: TransactionManager.exe <identifier> <URL>");
+        Console.WriteLine("Usage: TransactionManager.exe <identifier> <URL> <TM-URLS>");
     }
 }
