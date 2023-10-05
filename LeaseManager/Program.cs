@@ -1,4 +1,7 @@
-﻿namespace LeaseManager;
+﻿using LeaseManager.Frontends;
+using LeaseManager.Services;
+
+namespace LeaseManager;
 
 class LeaseManager
 {
@@ -25,18 +28,22 @@ class LeaseManager
 
             var wallTime = TimeSpan.Parse(args[4]);
 
-            // State state = new State();
-            // URBFrontend urbFrontend = new URBFrontend(identifier, transactionManagerURLS);
+            State state = new State();
+            LeasePropagationFrontend leasePropagationFrontend = new LeasePropagationFrontend(transactionManagerURLS);
+            PaxosFrontend paxosFrontend = new PaxosFrontend(identifier, state, leaseManagerURLS, leasePropagationFrontend);
 
-            // // Spawn Lease Manager
-            // Grpc.Core.Server server = new Grpc.Core.Server
-            // {
-            //     Services = {
-            //         DADTKVClientService.BindService(new DADTKVClientServiceImpl(state, urbFrontend)),
-            //         URBService.BindService(new URBServiceImpl(identifier, state))
-            //     },
-            //     Ports = { new Grpc.Core.ServerPort(host, port, Grpc.Core.ServerCredentials.Insecure) }
-            // };
+            // Spawn Lease Manager
+            Grpc.Core.Server server = new Grpc.Core.Server
+            {
+                Services = {
+                    LeaseService.BindService(new LeaseServiceImpl(state)),
+                    PaxosService.BindService(new PaxosServiceImpl(state))
+                },
+                Ports = { new Grpc.Core.ServerPort(host, port, Grpc.Core.ServerCredentials.Insecure) }
+            };
+
+            Console.WriteLine($"{identifier} listening on host {host} and port {port}");
+            Console.WriteLine($"Starting at: {wallTime}");
 
             // Wait for wall time
             var now = DateTime.Now;
@@ -44,7 +51,6 @@ class LeaseManager
 
             if (waitTime.TotalMilliseconds > 0)
             {
-                Console.WriteLine($"Waiting for {waitTime.TotalMilliseconds}ms");
                 Thread.Sleep(waitTime);
             }
             else
@@ -53,19 +59,28 @@ class LeaseManager
                 return;
             }
 
-// server.Start();
+            server.Start();
 
             // Configuring HTTP for client connections in Register method
             AppContext.SetSwitch("System.Net.Http.SocketsHttpHandler.Http2UnencryptedSupport", true);
 
-            Console.WriteLine($"{identifier} listening on host {host} and port {port}");
-            Console.WriteLine($"Starting at: {wallTime}");
+            // TODO: Hardcoded Leader
+            Timer timer = new Timer(async _ =>
+            {
+                if (identifier == "LM1")
+                {
+                    Console.WriteLine("Running paxos");
+                    await paxosFrontend.Paxos();
+                }
+            }, null, TimeSpan.Zero, TimeSpan.FromSeconds(10));
+
             Console.WriteLine("Press any key to exit...");
             Console.ReadLine();
 
-            //// Shutdown Server and Services
-            //urbFrontend.Shutdown();
-            //server.ShutdownAsync().Wait();
+            // Shutdown Server and Services
+            leasePropagationFrontend.Shutdown();
+            paxosFrontend.Shutdown();
+            server.ShutdownAsync().Wait();
         }
         catch (Exception e)
         {

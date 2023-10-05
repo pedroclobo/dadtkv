@@ -2,6 +2,7 @@
 using TransactionManager.Services;
 
 namespace TransactionManager;
+
 class TransactionManager
 {
     static void Main(string[] args)
@@ -28,17 +29,26 @@ class TransactionManager
             var wallTime = TimeSpan.Parse(args[4]);
 
             State state = new State();
+
             URBFrontend urbFrontend = new URBFrontend(identifier, transactionManagerURLS);
+            LeaseFrontend leaseFrontend = new LeaseFrontend(identifier, leaseManagerURLS);
+
+            LeasePropagationServiceImpl leasePropagationService = new LeasePropagationServiceImpl();
+            leasePropagationService.LeasesChanged += leaseFrontend.OnLeasesChanged;
 
             // Spawn Transaction Manager
             Grpc.Core.Server server = new Grpc.Core.Server
             {
                 Services = {
-                    DADTKVClientService.BindService(new DADTKVClientServiceImpl(state, urbFrontend, new LeaseFrontend(identifier, leaseManagerURLS))),
-                    URBService.BindService(new URBServiceImpl(identifier, state))
+                    DADTKVClientService.BindService(new DADTKVClientServiceImpl(state, urbFrontend, leaseFrontend)),
+                    URBService.BindService(new URBServiceImpl(identifier, state)),
+                    LeasePropagationService.BindService(leasePropagationService)
                 },
                 Ports = { new Grpc.Core.ServerPort(host, port, Grpc.Core.ServerCredentials.Insecure) }
             };
+
+            Console.WriteLine($"{identifier} listening on host {host} and port {port}");
+            Console.WriteLine($"Starting at: {wallTime}");
 
             // Wait for wall time
             var now = DateTime.Now;
@@ -46,7 +56,6 @@ class TransactionManager
 
             if (waitTime.TotalMilliseconds > 0)
             {
-                Console.WriteLine($"Waiting for {waitTime.TotalMilliseconds}ms");
                 Thread.Sleep(waitTime);
             }
             else
@@ -60,13 +69,12 @@ class TransactionManager
             // Configuring HTTP for client connections in Register method
             AppContext.SetSwitch("System.Net.Http.SocketsHttpHandler.Http2UnencryptedSupport", true);
 
-            Console.WriteLine($"{identifier} listening on host {host} and port {port}");
-            Console.WriteLine($"Starting at: {wallTime}");
             Console.WriteLine("Press any key to exit...");
             Console.ReadLine();
 
             // Shutdown Server and Services
             urbFrontend.Shutdown();
+            leaseFrontend.Shutdown();
             server.ShutdownAsync().Wait();
         }
         catch (Exception e)

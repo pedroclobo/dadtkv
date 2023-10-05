@@ -41,13 +41,18 @@ public class Parser
                         }
 
                         // Split read keys
-                        var read = tokens[1].Trim('(', ')').Split(",").ToList();
-                        read.RemoveAll(s => s == ""); // Remove all empty strings
+                        List<string> read = tokens[1].Trim('(', ')').Split(",").ToList();
+                        read.RemoveAll(s => s == "");       // Remove all empty strings
+                        // Remove all quotes
+                        for (int i = 0; i < read.Count; i++)
+                        {
+                            read[i] = read[i].Trim('"');
+                        }
 
                         // Split write <key, value> pairs
                         var write = new List<Utils.DadInteger>();
                         var pairs = tokens[2].Trim('(', ')').Split(">,<").ToList();
-                        pairs.RemoveAll(s => s == ""); // Remove all empty strings
+                        pairs.RemoveAll(s => s == "");       // Remove all empty strings
                         foreach (var token in pairs)
                         {
                             write.Add(Utils.DadInteger.Parse(token));

@@ -18,7 +18,20 @@ public class DADTKVClientServiceImpl : DADTKVClientService.DADTKVClientServiceBa
     {
         try
         {
-            // TODO: check for lease and ask for lease
+            // Gather all keys used in request
+            var keys = request.Read.ToList();
+            keys.AddRange(request.Write.Select(dadInt => dadInt.Key));
+
+            Console.WriteLine("Received request {0}", request);
+
+            // Ask for key leases
+            if (!_leaseFrontend.HasLease(keys))
+            {
+                _leaseFrontend.RequestLease(keys);
+            }
+
+            // Wait for key leases
+            await _leaseFrontend.WaitLeaseAsync(keys);
 
             // Perform Writes
             foreach (var dadInt in request.Write)

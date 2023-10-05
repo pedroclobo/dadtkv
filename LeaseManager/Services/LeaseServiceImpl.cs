@@ -5,10 +5,14 @@ namespace LeaseManager.Services;
 
 public class LeaseServiceImpl : LeaseService.LeaseServiceBase
 {
-    public LeaseServiceImpl() { }
-
+    private State _state;
+    public LeaseServiceImpl(State state) {
+        _state = state;
+    }
     public override Task<Empty> RequestLease(LeaseRequest request, ServerCallContext context)
     {
-        return base.RequestLease(request, context);
+        _state.AddLease(request.TransactionManagerId, request.Keys.ToList());
+
+        return Task.FromResult(new Empty());
     }
 }

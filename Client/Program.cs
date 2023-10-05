@@ -26,7 +26,6 @@ class Client
 
         if (waitTime.TotalMilliseconds > 0)
         {
-            Console.WriteLine($"Waiting for {waitTime.TotalMilliseconds}ms");
             Thread.Sleep(waitTime);
         } else
         {

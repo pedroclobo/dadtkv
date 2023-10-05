@@ -37,6 +37,7 @@ public class Frontend
         var result = new List<DadInteger>();
 
         var response = await _clients[0].TxSubmitAsync(request);
+
         foreach (var value in response.Values)
         {
             result.Add(DadInteger.FromProtobuf(value));

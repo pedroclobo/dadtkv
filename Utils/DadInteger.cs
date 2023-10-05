@@ -15,7 +15,7 @@ public class DadInteger
     {
         string[] kv = s.TrimStart('<').TrimEnd('>').Split(',');
 
-        return new DadInteger(kv[0], int.Parse(kv[1]));
+        return new DadInteger(kv[0].Trim('"'), int.Parse(kv[1]));
     }
     public static DadInteger FromProtobuf(DadInt dadInt)
     {
