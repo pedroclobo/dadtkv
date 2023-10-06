@@ -1,35 +1,25 @@
 ﻿using Google.Protobuf.WellKnownTypes;
 using Grpc.Net.Client;
 using TransactionManager.Services;
+using Utils;
 
 namespace TransactionManager.Frontends;
-public class LeaseFrontend
+public class LeaseFrontend : Frontend<LeaseService.LeaseServiceClient>
 {
     private string _identifier;
-
-    private List<GrpcChannel> _channels;
-    private List<LeaseService.LeaseServiceClient> _clients;
-
     private List<string> _leaseKeys;
 
-    public LeaseFrontend(string identifier, List<string> leaseManagerUrls)
+    public LeaseFrontend(string identifier, List<string> leaseManagerUrls) : base(leaseManagerUrls)
     {
         _identifier = identifier;
-
-        _channels = new List<GrpcChannel>();
-        foreach (var serverURL in leaseManagerUrls)
-        {
-            _channels.Add(GrpcChannel.ForAddress(serverURL));
-        }
-
-        _clients = new List<LeaseService.LeaseServiceClient>();
-        foreach (var channel in _channels)
-        {
-            _clients.Add(new LeaseService.LeaseServiceClient(channel));
-        }
-
         _leaseKeys = new List<string>();
     }
+
+    public override LeaseService.LeaseServiceClient CreateClient(GrpcChannel channel)
+    {
+        return new LeaseService.LeaseServiceClient(channel);
+    }
+
     public void RequestLease(List<string> keys)
     {
         var request = new LeaseRequest
@@ -48,6 +38,7 @@ public class LeaseFrontend
 
         Task.WhenAny(tasks);
     }
+
     public bool HasLease(string key)
     {
         lock (_leaseKeys)
@@ -55,6 +46,7 @@ public class LeaseFrontend
             return _leaseKeys.Contains(key);
         }
     }
+
     public bool HasLease(List<string> key)
     {
         lock (_leaseKeys)
@@ -62,6 +54,7 @@ public class LeaseFrontend
             return key.All(k => _leaseKeys.Contains(k));
         }
     }
+
     public void UpdateLeases(LeaseResponse response)
     {
         lock (_leaseKeys)
@@ -82,16 +75,9 @@ public class LeaseFrontend
 
         return;
     }
+
     public void OnLeasesChanged(object sender, LeaseEventArgs args)
     {
         UpdateLeases(args.Response);
-    }
-
-    public void Shutdown()
-    {
-        foreach (var channel in _channels)
-        {
-            channel.ShutdownAsync().Wait();
-        }
     }
 }

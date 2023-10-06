@@ -30,7 +30,7 @@ class LeaseManager
 
             State state = new State();
             LeasePropagationFrontend leasePropagationFrontend = new LeasePropagationFrontend(transactionManagerURLS);
-            PaxosFrontend paxosFrontend = new PaxosFrontend(identifier, state, leaseManagerURLS, leasePropagationFrontend);
+            PaxosFrontend paxosFrontend = new PaxosFrontend(state, leaseManagerURLS, leasePropagationFrontend);
 
             // Spawn Lease Manager
             Grpc.Core.Server server = new Grpc.Core.Server

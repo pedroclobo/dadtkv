@@ -1,24 +1,14 @@
 ﻿using Grpc.Net.Client;
+using Utils;
 
 namespace LeaseManager.Frontends;
-public class LeasePropagationFrontend
+public class LeasePropagationFrontend: Frontend<LeasePropagationService.LeasePropagationServiceClient>
 {
-    private List<GrpcChannel> _channels;
-    private List<LeasePropagationService.LeasePropagationServiceClient> _clients;
+    public LeasePropagationFrontend(List<string> serverURLs): base(serverURLs) { }
 
-    public LeasePropagationFrontend(List<string> serverURLs)
+    public override LeasePropagationService.LeasePropagationServiceClient CreateClient(GrpcChannel channel)
     {
-        _channels = new List<GrpcChannel>();
-        foreach (var serverURL in serverURLs)
-        {
-            _channels.Add(GrpcChannel.ForAddress(serverURL));
-        }
-
-        _clients = new List<LeasePropagationService.LeasePropagationServiceClient>();
-        foreach (var channel in _channels)
-        {
-            _clients.Add(new LeasePropagationService.LeasePropagationServiceClient(channel));
-        }
+        return new LeasePropagationService.LeasePropagationServiceClient(channel);
     }
     public void BroadcastLeases(int epoch, List<Lease> leases)
     {
@@ -33,13 +23,6 @@ public class LeasePropagationFrontend
         foreach (var client in _clients)
         {
             client.DeliverLease(response);
-        }
-    }
-    public void Shutdown()
-    {
-        foreach (var channel in _channels)
-        {
-            channel.ShutdownAsync().Wait();
         }
     }
 }

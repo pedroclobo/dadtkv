@@ -3,27 +3,17 @@ using Grpc.Net.Client;
 using Utils;
 
 namespace Client;
-public class Frontend
+public class ClientFrontend: Frontend<DADTKVClientService.DADTKVClientServiceClient>
 {
     private string _identifier;
-    private List<GrpcChannel> _serverChannels;
-    private List<DADTKVClientService.DADTKVClientServiceClient> _clients;
 
-    public Frontend(string identifier, string serverURLs)
+    public ClientFrontend(string identifier, List<string> serverURLs): base(serverURLs)
     {
         _identifier = identifier;
-
-        _serverChannels = new List<GrpcChannel>();
-        foreach (var serverURL in serverURLs.Split(","))
-        {
-            _serverChannels.Add(GrpcChannel.ForAddress(serverURL));
-        }
-
-        _clients = new List<DADTKVClientService.DADTKVClientServiceClient>();
-        foreach (var channel in _serverChannels)
-        {
-            _clients.Add(new DADTKVClientService.DADTKVClientServiceClient(channel));
-        }
+    }
+    public override DADTKVClientService.DADTKVClientServiceClient CreateClient(GrpcChannel channel)
+    {
+        return new DADTKVClientService.DADTKVClientServiceClient(channel);
     }
     public async Task<List<DadInteger>> TxSubmit(List<string> read, List<DadInteger> write)
     {
@@ -61,13 +51,5 @@ public class Frontend
         }
 
         return true;
-    }
-
-    public void Shutdown()
-    {
-        foreach (var channel in _serverChannels)
-        {
-            channel.ShutdownAsync().Wait();
-        }
     }
 }

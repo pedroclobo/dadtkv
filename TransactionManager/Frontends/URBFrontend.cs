@@ -2,32 +2,22 @@
 using Utils;
 
 namespace TransactionManager.Frontends;
-public class URBFrontend
+public class URBFrontend: Frontend<URBService.URBServiceClient>
 {
     private string _identifier;
     private int _majority;
 
-    private List<GrpcChannel> _channels;
-    private List<URBService.URBServiceClient> _clients;
-
-    public URBFrontend(string identifier, List<string> serverURLs)
+    public URBFrontend(string identifier, List<string> serverURLs): base(serverURLs)
     {
         _identifier = identifier;
 
-        _channels = new List<GrpcChannel>();
-        foreach (var serverURL in serverURLs)
-        {
-            _channels.Add(GrpcChannel.ForAddress(serverURL));
-        }
-
-        _clients = new List<URBService.URBServiceClient>();
-        foreach (var channel in _channels)
-        {
-            _clients.Add(new URBService.URBServiceClient(channel));
-        }
-
         // Don't count with current process
         _majority = (int)Math.Floor((double)_clients.Count / 2);
+    }
+
+    public override URBService.URBServiceClient CreateClient(GrpcChannel channel)
+    {
+        return new URBService.URBServiceClient(channel);
     }
 
     public async Task URBDeliver(TxSubmitRequest request)
@@ -65,13 +55,5 @@ public class URBFrontend
             Console.WriteLine("Received ACK from {0}", senderId);
         }
         Console.WriteLine("Got majority (#{0} ACKs)", _majority);
-    }
-
-    public void Shutdown()
-    {
-        foreach (var channel in _channels)
-        {
-            channel.ShutdownAsync().Wait();
-        }
     }
 }

@@ -3,9 +3,9 @@
 namespace Client;
 public class Parser
 {
-    private Frontend _frontend;
+    private ClientFrontend _frontend;
     private string _script;
-    public Parser(Frontend frontend, string script)
+    public Parser(ClientFrontend frontend, string script)
     {
         _frontend = frontend;
         _script = script;

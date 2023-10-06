@@ -1,9 +1,9 @@
 ﻿using Grpc.Net.Client;
+using Utils;
 
 namespace LeaseManager.Frontends;
-public class PaxosFrontend
+public class PaxosFrontend : Frontend<PaxosService.PaxosServiceClient>
 {
-    private string _identifier;
     private int _majority;
 
     private State _state;
@@ -12,34 +12,21 @@ public class PaxosFrontend
     private List<Lease> _value;
 
     private LeasePropagationFrontend _leasePropagationFrontend;
-
-    private List<GrpcChannel> _channels;
-    private List<PaxosService.PaxosServiceClient> _clients;
-
-    public PaxosFrontend(string identifier, State state,  List<string> serverURLs, LeasePropagationFrontend leasePropagationFrontend)
+    public PaxosFrontend(State state, List<string> serverURLs, LeasePropagationFrontend leasePropagationFrontend) : base(serverURLs)
     {
-        _identifier = identifier;
         _state = state;
+        _leasePropagationFrontend = leasePropagationFrontend;
 
         _writeTimestamp = 1;
         _value = new List<Lease>();
 
-        _channels = new List<GrpcChannel>();
-        foreach (var serverURL in serverURLs)
-        {
-            _channels.Add(GrpcChannel.ForAddress(serverURL));
-        }
-
-        _clients = new List<PaxosService.PaxosServiceClient>();
-        foreach (var channel in _channels)
-        {
-            _clients.Add(new PaxosService.PaxosServiceClient(channel));
-        }
-
         // Don't count with current process
         _majority = (int)Math.Floor((double)_clients.Count / 2);
-        _leasePropagationFrontend = leasePropagationFrontend;
+    }
 
+    public override PaxosService.PaxosServiceClient CreateClient(GrpcChannel channel)
+    {
+        return new PaxosService.PaxosServiceClient(channel);
     }
 
     public async Task Paxos()
@@ -110,12 +97,5 @@ public class PaxosFrontend
         _writeTimestamp++;
 
         Console.WriteLine("Received majority of accepted");
-    }
-    public void Shutdown()
-    {
-        foreach (var channel in _channels)
-        {
-            channel.ShutdownAsync().Wait();
-        }
     }
 }
