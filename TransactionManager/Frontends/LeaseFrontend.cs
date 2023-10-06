@@ -22,21 +22,30 @@ public class LeaseFrontend : Frontend<LeaseService.LeaseServiceClient>
 
     public void RequestLease(List<string> keys)
     {
-        var request = new LeaseRequest
+        try
         {
-            TransactionManagerId = _identifier,
-            Keys = { keys },
-        };
 
-        Console.WriteLine("Requesting lease for keys: {0}", string.Join(", ", keys));
+            var request = new LeaseRequest
+            {
+                TransactionManagerId = _identifier,
+                Keys = { keys },
+            };
 
-        List<Task<Empty>> tasks = new List<Task<Empty>>();
-        foreach (var client in _clients)
-        {
-            tasks.Add(Task.Run(() => client.RequestLease(request)));
+            Console.WriteLine("Requesting lease for keys: {0}", string.Join(", ", keys));
+
+            List<Task<Empty>> tasks = new List<Task<Empty>>();
+            foreach (var client in _clients)
+            {
+                tasks.Add(Task.Run(() => client.RequestLease(request)));
+            }
+
+            Task.WhenAny(tasks);
+
         }
-
-        Task.WhenAny(tasks);
+        catch (Exception e)
+        {
+            Console.WriteLine(e.Message);
+        }
     }
 
     public bool HasLease(string key)

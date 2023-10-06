@@ -3,11 +3,11 @@ using Grpc.Net.Client;
 using Utils;
 
 namespace Client;
-public class ClientFrontend: Frontend<DADTKVClientService.DADTKVClientServiceClient>
+public class ClientFrontend : Frontend<DADTKVClientService.DADTKVClientServiceClient>
 {
     private string _identifier;
 
-    public ClientFrontend(string identifier, List<Uri> serverURLs): base(serverURLs)
+    public ClientFrontend(string identifier, List<Uri> serverURLs) : base(serverURLs)
     {
         _identifier = identifier;
     }
@@ -17,39 +17,57 @@ public class ClientFrontend: Frontend<DADTKVClientService.DADTKVClientServiceCli
     }
     public async Task<List<DadInteger>> TxSubmit(List<string> read, List<DadInteger> write)
     {
-        var request = new TxSubmitRequest
+        try
         {
-            ClientId = _identifier,
-            Read = { read },
-            Write = { write.Select(d => d.ToProtobuf()) }
-        };
+            var request = new TxSubmitRequest
+            {
+                ClientId = _identifier,
+                Read = { read },
+                Write = { write.Select(d => d.ToProtobuf()) }
+            };
 
-        var result = new List<DadInteger>();
+            var result = new List<DadInteger>();
 
-        var response = await _clients[0].TxSubmitAsync(request);
+            var response = await _clients[0].TxSubmitAsync(request);
 
-        foreach (var value in response.Values)
+            foreach (var value in response.Values)
+            {
+                result.Add(DadInteger.FromProtobuf(value));
+            }
+
+            return result;
+        }
+        catch (Exception e)
         {
-            result.Add(DadInteger.FromProtobuf(value));
+            Console.WriteLine(e.Message);
         }
 
-        return result;
+        return new List<DadInteger>();
     }
 
     public async Task<bool> Status()
     {
-        var request = new Empty { };
-
-        foreach (var client in _clients)
+        try
         {
-            var response = await client.StatusAsync(request);
+            var request = new Empty { };
 
-            if (!response.Status)
+            foreach (var client in _clients)
             {
-                return false;
+                var response = await client.StatusAsync(request);
+
+                if (!response.Status)
+                {
+                    return false;
+                }
             }
+
+            return true;
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e.Message);
         }
 
-        return true;
+        return false;
     }
 }

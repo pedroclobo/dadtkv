@@ -1,4 +1,5 @@
-﻿using Google.Protobuf.WellKnownTypes;
+﻿using System.Linq.Expressions;
+using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 
 namespace TransactionManager.Services;
@@ -9,9 +10,18 @@ public class LeasePropagationServiceImpl : LeasePropagationService.LeasePropagat
 
     public override Task<Empty> DeliverLease(LeaseResponse request, ServerCallContext context)
     {
-        OnLeasesChanged(request);
+        try
+        {
+            OnLeasesChanged(request);
 
-        Console.WriteLine("Received lease response: {0}", request);
+            Console.WriteLine("Received lease response: {0}", request);
+
+            return Task.FromResult(new Empty());
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e.Message);
+        }
 
         return Task.FromResult(new Empty());
     }

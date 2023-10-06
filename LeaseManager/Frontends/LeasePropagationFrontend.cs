@@ -2,9 +2,9 @@
 using Utils;
 
 namespace LeaseManager.Frontends;
-public class LeasePropagationFrontend: Frontend<LeasePropagationService.LeasePropagationServiceClient>
+public class LeasePropagationFrontend : Frontend<LeasePropagationService.LeasePropagationServiceClient>
 {
-    public LeasePropagationFrontend(List<Uri> serverURLs): base(serverURLs) { }
+    public LeasePropagationFrontend(List<Uri> serverURLs) : base(serverURLs) { }
 
     public override LeasePropagationService.LeasePropagationServiceClient CreateClient(GrpcChannel channel)
     {
@@ -12,17 +12,24 @@ public class LeasePropagationFrontend: Frontend<LeasePropagationService.LeasePro
     }
     public void BroadcastLeases(int epoch, List<Lease> leases)
     {
-        LeaseResponse response = new LeaseResponse
+        try
         {
-            Epoch = epoch,
-            Leases = { leases },
-        };
+            LeaseResponse response = new LeaseResponse
+            {
+                Epoch = epoch,
+                Leases = { leases },
+            };
 
-        Console.WriteLine("Broadcasting leases: {0}", response);
+            Console.WriteLine("Broadcasting leases: {0}", response);
 
-        foreach (var client in _clients)
+            foreach (var client in _clients)
+            {
+                client.DeliverLease(response);
+            }
+        }
+        catch (Exception e)
         {
-            client.DeliverLease(response);
+            Console.WriteLine(e.Message);
         }
     }
 }

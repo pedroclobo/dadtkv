@@ -12,18 +12,27 @@ public class URBServiceImpl : URBService.URBServiceBase
     }
     public override Task<URBResponse> URBDeliver(URBRequest request, ServerCallContext context)
     {
-        Console.WriteLine("Received URB broadcast from {0}", request.SenderId);
-
-        // Perform Writes
-        lock (_state)
+        try
         {
-            foreach (var dadInt in request.Write)
+            Console.WriteLine("Received URB broadcast from {0}", request.SenderId);
+
+            // Perform Writes
+            lock (_state)
             {
-                Console.WriteLine("Setting key {0} to value {1}", dadInt.Key, dadInt.Value);
-                _state.Set(dadInt.Key, dadInt.Value);
+                foreach (var dadInt in request.Write)
+                {
+                    Console.WriteLine("Setting key {0} to value {1}", dadInt.Key, dadInt.Value);
+                    _state.Set(dadInt.Key, dadInt.Value);
+                }
             }
+
+            return Task.FromResult(new URBResponse { SenderId = _identifier, UpdateId = request.UpdateId });
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e.Message);
         }
 
-        return Task.FromResult(new URBResponse { SenderId = _identifier, UpdateId = request.UpdateId });
+        return Task.FromResult(new URBResponse { });
     }
 }

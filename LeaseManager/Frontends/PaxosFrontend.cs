@@ -31,71 +31,94 @@ public class PaxosFrontend : Frontend<PaxosService.PaxosServiceClient>
 
     public async Task Paxos()
     {
-        await PrepareDeliver();
-        await AcceptDeliver();
-        _leasePropagationFrontend.BroadcastLeases(_writeTimestamp - 1, _value);
+        try
+        {
+            await PrepareDeliver();
+            await AcceptDeliver();
+            _leasePropagationFrontend.BroadcastLeases(_writeTimestamp - 1, _value);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e.Message);
+        }
     }
 
     public async Task PrepareDeliver()
     {
-        PrepareRequest request = new PrepareRequest
+        try
         {
-            Timestamp = _writeTimestamp,
-        };
 
-        Console.WriteLine("Sending prepare request: {0}", request);
+            PrepareRequest request = new PrepareRequest
+            {
+                Timestamp = _writeTimestamp,
+            };
 
-        List<Task<PromiseResponse>> tasks = new List<Task<PromiseResponse>>();
-        foreach (var client in _clients)
-        {
-            tasks.Add(Task.Run(() => client.Prepare(request)));
+            Console.WriteLine("Sending prepare request: {0}", request);
+
+            List<Task<PromiseResponse>> tasks = new List<Task<PromiseResponse>>();
+            foreach (var client in _clients)
+            {
+                tasks.Add(Task.Run(() => client.Prepare(request)));
+            }
+
+            // Wait for majority of acknowledgements
+            while (tasks.Count(t => t.IsCompleted) < _majority)
+            {
+                Task<PromiseResponse> completedTask = await Task.WhenAny(tasks);
+            }
+
+            Console.WriteLine("Received majority of promises");
+
+            // Update write timestamp and value
+            var response = tasks.Select(t => t.Result).OrderByDescending(r => r.Timestamp).First();
+            if (response.Timestamp > _writeTimestamp)
+            {
+                _writeTimestamp = response.Timestamp;
+                _value = response.Value.ToList();
+            }
         }
-
-        // Wait for majority of acknowledgements
-        while (tasks.Count(t => t.IsCompleted) < _majority)
+        catch (Exception e)
         {
-            Task<PromiseResponse> completedTask = await Task.WhenAny(tasks);
-        }
-
-        Console.WriteLine("Received majority of promises");
-
-        // Update write timestamp and value
-        var response = tasks.Select(t => t.Result).OrderByDescending(r => r.Timestamp).First();
-        if (response.Timestamp > _writeTimestamp)
-        {
-            _writeTimestamp = response.Timestamp;
-            _value = response.Value.ToList();
+            Console.WriteLine(e.Message);
         }
     }
 
     public async Task AcceptDeliver()
     {
-        lock (_state)
+        try
         {
-            _value = _state.GetLeases();
+
+            lock (_state)
+            {
+                _value = _state.GetLeases();
+            }
+
+            AcceptRequest request = new AcceptRequest
+            {
+                Timestamp = _writeTimestamp,
+                Value = { _value },
+            };
+
+            Console.WriteLine("Sending accept request: {0}", request);
+
+            List<Task<AcceptedResponse>> tasks = new List<Task<AcceptedResponse>>();
+            foreach (var client in _clients)
+            {
+                tasks.Add(Task.Run(() => client.Accept(request)));
+            }
+
+            // Wait for majority of acknowledgements
+            while (tasks.Count(t => t.IsCompleted) < _majority)
+            {
+                Task<AcceptedResponse> completedTask = await Task.WhenAny(tasks);
+            }
+            _writeTimestamp++;
+
+            Console.WriteLine("Received majority of accepted");
         }
-
-        AcceptRequest request = new AcceptRequest
+        catch (Exception e)
         {
-            Timestamp = _writeTimestamp,
-            Value = { _value },
-        };
-
-        Console.WriteLine("Sending accept request: {0}", request);
-
-        List<Task<AcceptedResponse>> tasks = new List<Task<AcceptedResponse>>();
-        foreach (var client in _clients)
-        {
-            tasks.Add(Task.Run(() => client.Accept(request)));
+            Console.WriteLine(e.Message);
         }
-
-        // Wait for majority of acknowledgements
-        while (tasks.Count(t => t.IsCompleted) < _majority)
-        {
-            Task<AcceptedResponse> completedTask = await Task.WhenAny(tasks);
-        }
-        _writeTimestamp++;
-
-        Console.WriteLine("Received majority of accepted");
     }
 }
