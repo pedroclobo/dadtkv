@@ -32,8 +32,11 @@ public class State
 
         foreach (var tid in _data.Keys)
         {
-            leases.Add(new Lease { TransactionManagerId = tid, Keys = { _data[tid].Peek() } });
-            _data[tid].Dequeue();
+            if (_data[tid].Count > 0)
+            {
+                leases.Add(new Lease { TransactionManagerId = tid, Keys = { _data[tid].Peek() } });
+                _data[tid].Dequeue();
+            }
         }
 
         return leases;
