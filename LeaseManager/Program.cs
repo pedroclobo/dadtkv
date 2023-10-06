@@ -52,15 +52,23 @@ public class LeaseManager
 
             server.Start();
 
+            int currentTimeSlot = 0;
+            int timeSlots = configurationParser.TimeSlots;
+            TimeSpan slotDuration = configurationParser.SlotDuration;
+
             // TODO: Hardcoded Leader
             Timer timer = new Timer(async _ =>
             {
-                if (identifier == "LM1")
+                if (currentTimeSlot < timeSlots)
                 {
-                    Console.WriteLine("Running paxos");
-                    await paxosFrontend.Paxos();
+                    if (identifier == "LM1")
+                    {
+                        Console.WriteLine("Running paxos");
+                        await paxosFrontend.Paxos();
+                    }
+                    currentTimeSlot++;
                 }
-            }, null, TimeSpan.Zero, TimeSpan.FromSeconds(10));
+            }, null, TimeSpan.Zero, slotDuration);
 
             Console.WriteLine("Press any key to exit...");
             Console.WriteLine();
