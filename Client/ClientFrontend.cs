@@ -45,29 +45,25 @@ public class ClientFrontend : Frontend<DADTKVClientService.DADTKVClientServiceCl
         return new List<DadInteger>();
     }
 
-    public async Task<bool> Status()
+    public async Task<List<StatusResponse>> Status()
     {
         try
         {
-            var request = new Empty { };
+            Empty request = new Empty { };
 
+            List<Task<StatusResponse>> tasks = new List<Task<StatusResponse>>();
             foreach (var client in _clients)
             {
-                var response = await client.StatusAsync(request);
-
-                if (!response.Status)
-                {
-                    return false;
-                }
+                tasks.Add(Task.Run(() => client.Status(request)));
             }
 
-            return true;
+            return (await Task.WhenAll(tasks)).ToList();
         }
         catch (Exception e)
         {
             Console.WriteLine(e.Message);
         }
 
-        return false;
+        return new List<StatusResponse>();
     }
 }

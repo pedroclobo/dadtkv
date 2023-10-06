@@ -76,6 +76,10 @@ public class CommandParser
 
                         break;
 
+                    case "S":
+                        _commands.Add(new SCommand());
+                        break;
+
                     default:
                         throw new Exception("Invalid command: " + tokens[0]);
                 }
@@ -107,12 +111,20 @@ public class CommandParser
                     List<DadInteger> response = await _frontend.TxSubmit(tCommand.Read, tCommand.Write);
                     Console.WriteLine("Reply: [{0}]", string.Join(", ", response));
                 }
-                else if (command is  WCommand)
+                else if (command is WCommand)
                 {
                     WCommand wCommand = (WCommand)command;
 
                     Console.WriteLine("Waiting for {0} ms", wCommand.WaitTime);
                     Thread.Sleep(wCommand.WaitTime);
+                }
+                else if (command is SCommand)
+                {
+                    var responses = await _frontend.Status();
+                    foreach (var response in responses)
+                    {
+                        Console.WriteLine($"Reply - S: {response}");
+                    }
                 }
             }
         }

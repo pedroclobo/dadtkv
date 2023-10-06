@@ -30,11 +30,9 @@ public class Client
         // Wait for wall time
         await configurationParser.WaitForWallTimeAsync();
 
-        // Execution Loop
-        await commandParser.Execute();
-
         Console.WriteLine("Press any key to exit...");
         Console.WriteLine();
+        await commandParser.Execute();
         Console.ReadLine();
 
         // Clean Resources

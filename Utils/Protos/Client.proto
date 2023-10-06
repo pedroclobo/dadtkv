@@ -19,5 +19,6 @@ message TxSubmitResponse {
 }
 
 message StatusResponse {
-	bool status = 1;
+	string serverId = 1;
+	repeated DadInt values = 2;
 }

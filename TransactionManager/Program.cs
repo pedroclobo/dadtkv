@@ -38,7 +38,7 @@ public class TransactionManager
             Grpc.Core.Server server = new Grpc.Core.Server
             {
                 Services = {
-                    DADTKVClientService.BindService(new DADTKVClientServiceImpl(state, urbFrontend, leaseFrontend)),
+                    DADTKVClientService.BindService(new DADTKVClientServiceImpl(identifier, state, urbFrontend, leaseFrontend)),
                     URBService.BindService(new URBServiceImpl(identifier, state)),
                     LeasePropagationService.BindService(leasePropagationService)
                 },

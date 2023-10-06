@@ -28,5 +28,21 @@
             Console.WriteLine("Retrieved key {0} with value {1}", key, _data[key]);
             return _data[key];
         }
+
+        public List<DadInt> ToDadInt()
+        {
+            List<DadInt> pairs = new List<DadInt>();
+
+            foreach (var pair in _data)
+            {
+                pairs.Add(new DadInt
+                {
+                    Key = pair.Key,
+                    Value = pair.Value,
+                });
+            }
+
+            return pairs;
+        }
     }
 }

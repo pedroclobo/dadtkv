@@ -5,15 +5,19 @@ using TransactionManager.Frontends;
 namespace TransactionManager.Services;
 public class DADTKVClientServiceImpl : DADTKVClientService.DADTKVClientServiceBase
 {
+    private string _identifier;
     private State _state;
     private URBFrontend _urbFrontend;
     private LeaseFrontend _leaseFrontend;
-    public DADTKVClientServiceImpl(State state, URBFrontend urbFrontend, LeaseFrontend leaseFrontend)
+
+    public DADTKVClientServiceImpl(string identifier, State state, URBFrontend urbFrontend, LeaseFrontend leaseFrontend)
     {
+        _identifier = identifier;
         _state = state;
         _urbFrontend = urbFrontend;
         _leaseFrontend = leaseFrontend;
     }
+
     public async override Task<TxSubmitResponse> TxSubmit(TxSubmitRequest request, ServerCallContext context)
     {
         try
@@ -63,8 +67,26 @@ public class DADTKVClientServiceImpl : DADTKVClientService.DADTKVClientServiceBa
 
         return new TxSubmitResponse();
     }
+
     public override Task<StatusResponse> Status(Empty request, ServerCallContext context)
     {
-        return base.Status(request, context);
+        try
+        {
+            return Task.FromResult(new StatusResponse
+            {
+                ServerId = _identifier,
+                Values = { _state.ToDadInt() },
+            });
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e.Message);
+        }
+
+        return Task.FromResult(new StatusResponse
+        {
+            ServerId = _identifier,
+            Values = { new List<DadInt>() },
+        });
     }
 }
