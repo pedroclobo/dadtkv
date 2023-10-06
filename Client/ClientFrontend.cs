@@ -7,7 +7,7 @@ public class ClientFrontend: Frontend<DADTKVClientService.DADTKVClientServiceCli
 {
     private string _identifier;
 
-    public ClientFrontend(string identifier, List<string> serverURLs): base(serverURLs)
+    public ClientFrontend(string identifier, List<Uri> serverURLs): base(serverURLs)
     {
         _identifier = identifier;
     }

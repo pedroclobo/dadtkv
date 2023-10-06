@@ -1,38 +1,37 @@
 ﻿using LeaseManager.Frontends;
 using LeaseManager.Services;
+using Utils.ConfigurationParser;
 
 namespace LeaseManager;
 
-class LeaseManager
+public class LeaseManager
 {
-    static void Main(string[] args)
+    public static async Task Main(string[] args)
     {
         try
         {
-            if (args.Length != 5)
+            if (args.Length != 2)
             {
                 PrintHelp();
                 return;
             }
+            string identifier = args[0];
+            string filename = args[1];
 
-            var identifier = args[0];
-            string[] protocolHostnamePort = args[1].Split("://");
-            string[] hostnameAndPort = protocolHostnamePort[1].Split(":");
-            string host = hostnameAndPort[0];
-            int port = int.Parse(hostnameAndPort[1]);
+            ConfigurationParser configurationParser = ConfigurationParser.From(filename);
+            string host = configurationParser.ServerHost(identifier);
+            int port = configurationParser.ServerPort(identifier);
 
-            var leaseManagerURLS = args[2].Split(",").ToList();
-            leaseManagerURLS.Remove(args[1]); // Remove own URL
+            List<Uri> leaseManagerUrls = configurationParser.LeaseManagerUrls();
+            leaseManagerUrls.Remove(new Uri(configurationParser.ServerUrl(identifier))); // Remove own URL
 
-            var transactionManagerURLS = args[3].Split(",").ToList();
+            List<Uri> transactionManagerURLS = configurationParser.TransactionManagerUrls();
 
-            var wallTime = TimeSpan.Parse(args[4]);
-
+            // Create server
             State state = new State();
             LeasePropagationFrontend leasePropagationFrontend = new LeasePropagationFrontend(transactionManagerURLS);
-            PaxosFrontend paxosFrontend = new PaxosFrontend(state, leaseManagerURLS, leasePropagationFrontend);
+            PaxosFrontend paxosFrontend = new PaxosFrontend(state, leaseManagerUrls, leasePropagationFrontend);
 
-            // Spawn Lease Manager
             Grpc.Core.Server server = new Grpc.Core.Server
             {
                 Services = {
@@ -42,27 +41,16 @@ class LeaseManager
                 Ports = { new Grpc.Core.ServerPort(host, port, Grpc.Core.ServerCredentials.Insecure) }
             };
 
-            Console.WriteLine($"{identifier} listening on host {host} and port {port}");
-            Console.WriteLine($"Starting at: {wallTime}");
+            Console.WriteLine($"Lease Manager {identifier} will be listening on host {host} and port {port}");
+            Console.WriteLine($"Starting at: {configurationParser.WallTime}");
+
+            // Configure HTTP for client connections in Register method
+            AppContext.SetSwitch("System.Net.Http.SocketsHttpHandler.Http2UnencryptedSupport", true);
 
             // Wait for wall time
-            var now = DateTime.Now;
-            var waitTime = new DateTime(now.Year, now.Month, now.Day, wallTime.Hours, wallTime.Minutes, wallTime.Minutes) - now;
-
-            if (waitTime.TotalMilliseconds > 0)
-            {
-                Thread.Sleep(waitTime);
-            }
-            else
-            {
-                Console.WriteLine("Invalid time");
-                return;
-            }
+            await configurationParser.WaitForWallTimeAsync();
 
             server.Start();
-
-            // Configuring HTTP for client connections in Register method
-            AppContext.SetSwitch("System.Net.Http.SocketsHttpHandler.Http2UnencryptedSupport", true);
 
             // TODO: Hardcoded Leader
             Timer timer = new Timer(async _ =>
@@ -75,6 +63,7 @@ class LeaseManager
             }, null, TimeSpan.Zero, TimeSpan.FromSeconds(10));
 
             Console.WriteLine("Press any key to exit...");
+            Console.WriteLine();
             Console.ReadLine();
 
             // Shutdown Server and Services
@@ -89,7 +78,7 @@ class LeaseManager
     }
     private static void PrintHelp()
     {
-        Console.WriteLine("Usage: LeaseManager.exe <identifier> <URL> <LM-URLS> <TM-URLS> <wall_time");
+        Console.WriteLine("Usage: LeaseManager.exe <identifier> <configuration-file>");
     }
 }
 

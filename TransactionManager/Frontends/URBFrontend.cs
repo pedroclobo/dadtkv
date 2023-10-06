@@ -7,7 +7,7 @@ public class URBFrontend: Frontend<URBService.URBServiceClient>
     private string _identifier;
     private int _majority;
 
-    public URBFrontend(string identifier, List<string> serverURLs): base(serverURLs)
+    public URBFrontend(string identifier, List<Uri> serverURLs): base(serverURLs)
     {
         _identifier = identifier;
 

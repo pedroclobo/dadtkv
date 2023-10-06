@@ -4,7 +4,7 @@ using Utils;
 namespace LeaseManager.Frontends;
 public class LeasePropagationFrontend: Frontend<LeasePropagationService.LeasePropagationServiceClient>
 {
-    public LeasePropagationFrontend(List<string> serverURLs): base(serverURLs) { }
+    public LeasePropagationFrontend(List<Uri> serverURLs): base(serverURLs) { }
 
     public override LeasePropagationService.LeasePropagationServiceClient CreateClient(GrpcChannel channel)
     {

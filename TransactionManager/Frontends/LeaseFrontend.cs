@@ -9,7 +9,7 @@ public class LeaseFrontend : Frontend<LeaseService.LeaseServiceClient>
     private string _identifier;
     private List<string> _leaseKeys;
 
-    public LeaseFrontend(string identifier, List<string> leaseManagerUrls) : base(leaseManagerUrls)
+    public LeaseFrontend(string identifier, List<Uri> leaseManagerUrls) : base(leaseManagerUrls)
     {
         _identifier = identifier;
         _leaseKeys = new List<string>();

@@ -1,53 +1,48 @@
-﻿namespace Client;
+﻿using Client.Commands;
+using Utils.ConfigurationParser;
 
-class Client
+namespace Client;
+
+public class Client
 {
-    static void Main(string[] args)
+    public static async Task Main(string[] args)
     {
-        if (args.Length != 4)
+        if (args.Length != 2)
         {
             PrintHelp();
             return;
         }
+        string identifier = args[0];
+        string filename = args[1];
 
-        var identifier = args[0];
-        var script = "../Config/Client/" + args[1];
-        var serverURLs = args[2].Split(",").ToList();
-        var wallTime = TimeSpan.Parse(args[3]);
+        ConfigurationParser configurationParser = ConfigurationParser.From(filename);
+        string script = configurationParser.ClientScript(identifier);
+        DateTime wallTime = configurationParser.WallTime;
 
-        Console.WriteLine($"I am a client with identifier: {identifier}");
-        Console.WriteLine($"Running script: {script}");
-        Console.WriteLine($"Transaction Manager URLs: {serverURLs}");
+        Console.WriteLine($"Client {identifier} with script {script}");
         Console.WriteLine($"Starting at: {wallTime}");
 
+        // Parse client script
+        var frontend = new ClientFrontend(identifier, configurationParser.TransactionManagerUrls());
+        var commandParser = new CommandParser(frontend, script);
+        commandParser.Parse();
+
         // Wait for wall time
-        var now = DateTime.Now;
-        var waitTime = new DateTime(now.Year, now.Month, now.Day, wallTime.Hours, wallTime.Minutes, wallTime.Minutes) - now;
+        await configurationParser.WaitForWallTimeAsync();
 
-        if (waitTime.TotalMilliseconds > 0)
-        {
-            Thread.Sleep(waitTime);
-        } else
-        {
-            Console.WriteLine("Invalid time");
-            return;
-        }
-
-        // Spawn Frontend and Parser
-        var frontend = new ClientFrontend(identifier, serverURLs);
-        var parser = new Parser(frontend, script);
-
-        parser.Parse();
+        // Execution Loop
+        await commandParser.Execute();
 
         Console.WriteLine("Press any key to exit...");
+        Console.WriteLine();
         Console.ReadLine();
 
-        // Shutdown Grpc Channels
+        // Clean Resources
         frontend.Shutdown();
     }
 
     private static void PrintHelp()
     {
-        Console.WriteLine("Usage: Client.exe <identifier> <script> <server_urls> <wall_time>");
+        Console.WriteLine("Usage: Client.exe <identifier> <configuration-file>");
     }
 }

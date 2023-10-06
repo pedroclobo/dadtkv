@@ -12,7 +12,7 @@ public class PaxosFrontend : Frontend<PaxosService.PaxosServiceClient>
     private List<Lease> _value;
 
     private LeasePropagationFrontend _leasePropagationFrontend;
-    public PaxosFrontend(State state, List<string> serverURLs, LeasePropagationFrontend leasePropagationFrontend) : base(serverURLs)
+    public PaxosFrontend(State state, List<Uri> serverURLs, LeasePropagationFrontend leasePropagationFrontend) : base(serverURLs)
     {
         _state = state;
         _leasePropagationFrontend = leasePropagationFrontend;

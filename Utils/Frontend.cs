@@ -7,7 +7,7 @@ public abstract class Frontend<T>
     protected List<GrpcChannel> _channels;
     protected List<T> _clients;
 
-    public Frontend(List<string> clientUrls)
+    public Frontend(List<Uri> clientUrls)
     {
         _channels = new List<GrpcChannel>();
         foreach (var serverURL in clientUrls)

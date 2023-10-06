@@ -1,17 +1,21 @@
 ﻿using Client.Commands;
+using Utils;
 
 namespace Client;
-public class Parser
+public class CommandParser
 {
     private ClientFrontend _frontend;
     private string _script;
-    public Parser(ClientFrontend frontend, string script)
+    private List<Command> _commands;
+
+    public CommandParser(ClientFrontend frontend, string script)
     {
         _frontend = frontend;
         _script = script;
+        _commands = new List<Command>();
     }
 
-    public async void Parse()
+    public List<Command> Parse()
     {
         try
         {
@@ -29,7 +33,7 @@ public class Parser
                 // Empty line denotes EOF
                 else if (tokens.Length == 0)
                 {
-                    return;
+                    return _commands;
                 }
 
                 switch (tokens[0])
@@ -58,11 +62,7 @@ public class Parser
                             write.Add(Utils.DadInteger.Parse(token));
                         }
 
-                        var command = new TCommand(read, write);
-                        var result = await _frontend.TxSubmit(read, write);
-
-                        Console.WriteLine("Request: " + command.ToString());
-                        Console.WriteLine("Reply: [" + string.Join(", ", result) + "]");
+                        _commands.Add(new TCommand(read, write));
 
                         break;
 
@@ -72,8 +72,7 @@ public class Parser
                             throw new Exception("Invalid W command");
                         }
 
-                        int time = int.Parse(tokens[1]);
-                        Thread.Sleep(time);
+                        _commands.Add(new WCommand(int.Parse(tokens[1])));
 
                         break;
 
@@ -81,9 +80,6 @@ public class Parser
                         throw new Exception("Invalid command: " + tokens[0]);
                 }
             }
-
-            Console.ReadLine();
-
         }
         catch (System.IO.FileNotFoundException e)
         {
@@ -92,6 +88,33 @@ public class Parser
         catch (System.Exception e)
         {
             Console.WriteLine("Error: " + e.Message);
+        }
+
+        return _commands;
+    }
+
+    public async Task Execute()
+    {
+        while (true)
+        {
+            foreach (Command command in _commands)
+            {
+                if (command is TCommand)
+                {
+                    TCommand tCommand = (TCommand)command;
+
+                    Console.WriteLine("Request: {0}", command);
+                    List<DadInteger> response = await _frontend.TxSubmit(tCommand.Read, tCommand.Write);
+                    Console.WriteLine("Reply: [{0}]", string.Join(", ", response));
+                }
+                else if (command is  WCommand)
+                {
+                    WCommand wCommand = (WCommand)command;
+
+                    Console.WriteLine("Waiting for {0} ms", wCommand.WaitTime);
+                    Thread.Sleep(wCommand.WaitTime);
+                }
+            }
         }
     }
 }
