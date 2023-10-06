@@ -33,7 +33,7 @@ public class PaxosFrontend : Frontend<PaxosService.PaxosServiceClient>
     {
         await PrepareDeliver();
         await AcceptDeliver();
-        _leasePropagationFrontend.BroadcastLeases(_writeTimestamp, _value);
+        _leasePropagationFrontend.BroadcastLeases(_writeTimestamp - 1, _value);
     }
 
     public async Task PrepareDeliver()
