@@ -21,7 +21,7 @@ public sealed class ConfigurationParser
 
     public int TimeSlots { get; private set; }
     public TimeSpan SlotDuration { get; private set; }
-    public DateTime WallTime { get; private set; }
+    public DateTime WallTime { get; set; }
 
     private ConfigurationParser(string filename)
     {
@@ -136,6 +136,22 @@ public sealed class ConfigurationParser
         {
             throw new Exception("WallTime already passed");
         }
+    }
+
+    public void WriteWallTime(int increment)
+    {
+        string[] lines = File.ReadAllLines(_filename);
+
+        for (int i = 0; i < lines.Length; i++)
+        {
+            string line = lines[i];
+            if (line.StartsWith("T"))
+            {
+                lines[i] = $"T {DateTime.Now.AddSeconds(increment).ToString("HH:mm:ss")}";
+            }
+        }
+
+        File.WriteAllLines(_filename, lines);
     }
 
     public void Parse()

@@ -8,7 +8,7 @@ public class Launcher
     private static List<Process> _processes = new List<Process>();
     public static void Main(string[] args)
     {
-        if (args.Length != 1)
+        if (args.Length > 2)
         {
             PrintHelp();
             return;
@@ -17,6 +17,13 @@ public class Launcher
 
         // Initialize ConfigurationParser
         ConfigurationParser parser = ConfigurationParser.From(filename);
+
+        // Override Wall Time from Configuration File
+        if (args.Length == 2 && args[1].StartsWith("-o"))
+        {
+            parser.WriteWallTime(30);
+            Console.WriteLine($"Setting wall time to 30 seconds from now");
+        }
 
         // Spawn Clients
         foreach (string identifier in parser.ClientIdentifiers())
@@ -44,7 +51,7 @@ public class Launcher
 
     private static void PrintHelp()
     {
-        Console.WriteLine("Usage: Launcher.exe <configuration_file>");
+        Console.WriteLine("Usage: Launcher.exe <configuration_file> [-o]");
     }
     private class ProcessRunner
     {
