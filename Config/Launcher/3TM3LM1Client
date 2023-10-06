@@ -1,7 +1,10 @@
 P TM1 T http://localhost:5001
 P TM2 T http://localhost:5002
 P TM3 T http://localhost:5003
+P LM1 L http://localhost:5004
+P LM2 L http://localhost:5005
+P LM3 L http://localhost:5006
 P C1 C SimpleScript
 S 10
-T 00:00:00
+T 15:02:00
 D 5000
