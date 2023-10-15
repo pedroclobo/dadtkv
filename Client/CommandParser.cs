@@ -99,32 +99,29 @@ public class CommandParser
 
     public async Task Execute()
     {
-        while (true)
+        foreach (Command command in _commands)
         {
-            foreach (Command command in _commands)
+            if (command is TCommand)
             {
-                if (command is TCommand)
-                {
-                    TCommand tCommand = (TCommand)command;
+                TCommand tCommand = (TCommand)command;
 
-                    Console.WriteLine("Request: {0}", command);
-                    List<DadInteger> response = await _frontend.TxSubmit(tCommand.Read, tCommand.Write);
-                    Console.WriteLine("Reply: [{0}]", string.Join(", ", response));
-                }
-                else if (command is WCommand)
-                {
-                    WCommand wCommand = (WCommand)command;
+                Console.WriteLine("Request: {0}", command);
+                List<DadInteger> response = await _frontend.TxSubmit(tCommand.Read, tCommand.Write);
+                Console.WriteLine("Reply: [{0}]", string.Join(", ", response));
+            }
+            else if (command is WCommand)
+            {
+                WCommand wCommand = (WCommand)command;
 
-                    Console.WriteLine("Waiting for {0} ms", wCommand.WaitTime);
-                    Thread.Sleep(wCommand.WaitTime);
-                }
-                else if (command is SCommand)
+                Console.WriteLine("Waiting for {0} ms", wCommand.WaitTime);
+                Thread.Sleep(wCommand.WaitTime);
+            }
+            else if (command is SCommand)
+            {
+                var responses = await _frontend.Status();
+                foreach (var response in responses)
                 {
-                    var responses = await _frontend.Status();
-                    foreach (var response in responses)
-                    {
-                        Console.WriteLine($"Reply - S: {response}");
-                    }
+                    Console.WriteLine($"Reply - S: {response}");
                 }
             }
         }
