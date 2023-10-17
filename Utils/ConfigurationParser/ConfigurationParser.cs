@@ -19,6 +19,11 @@ public sealed class ConfigurationParser
     private Dictionary<string, Uri> _transactionManagers;
     private Dictionary<string, Uri> _leaseManagers;
 
+    private List<string> _serverIdentifiers; // keep track of order in which servers are added
+
+    private Dictionary<Tuple<string, int>, List<string>> _suspected;
+    private Dictionary<Tuple<string, int>, bool> _failed;
+
     public int TimeSlots { get; private set; }
     public TimeSpan SlotDuration { get; private set; }
     public DateTime WallTime { get; set; }
@@ -29,6 +34,9 @@ public sealed class ConfigurationParser
         _clients = new Dictionary<string, string>();
         _leaseManagers = new Dictionary<string, Uri>();
         _transactionManagers = new Dictionary<string, Uri>();
+        _serverIdentifiers = new List<string>();
+        _suspected = new Dictionary<Tuple<string, int>, List<string>>();
+        _failed = new Dictionary<Tuple<string, int>, bool>();
     }
 
     public static ConfigurationParser From(string filename)
@@ -64,10 +72,12 @@ public sealed class ConfigurationParser
         if (_transactionManagers.ContainsKey(identifier))
         {
             return _transactionManagers[identifier].ToString();
-        } else if (_leaseManagers.ContainsKey(identifier))
+        }
+        else if (_leaseManagers.ContainsKey(identifier))
         {
             return _leaseManagers[identifier].ToString();
-        } else
+        }
+        else
         {
             throw new Exception("Invalid server identifier");
         }
@@ -125,6 +135,26 @@ public sealed class ConfigurationParser
         return _leaseManagers.Values.ToList();
     }
 
+    public List<string> Suspected(string identifier, int slot)
+    {
+        var key = new Tuple<string, int>(identifier, slot);
+        if (!_suspected.ContainsKey(key))
+        {
+            return new List<string>();
+        }
+        return _suspected[key];
+    }
+
+    public bool Failed(string identifier, int slot)
+    {
+        var key = new Tuple<string, int>(identifier, slot);
+        if (!_failed.ContainsKey(key))
+        {
+            return false;
+        }
+        return _failed[key];
+    }
+
     public async Task WaitForWallTimeAsync()
     {
         TimeSpan delay = WallTime - DateTime.Now;
@@ -132,7 +162,8 @@ public sealed class ConfigurationParser
         if (delay.TotalMilliseconds > 0)
         {
             await Task.Delay(delay);
-        } else
+        }
+        else
         {
             throw new Exception("WallTime already passed");
         }
@@ -208,6 +239,31 @@ public sealed class ConfigurationParser
                     break;
 
                 case "F":
+                    int timeSlot = int.Parse(tokens[1]);
+                    int i = 2;
+
+                    while (i < tokens.Length && (tokens[i] == "C" || tokens[i] == "N"))
+                    {
+                        string serverIdentifier = GetNthServerIdentifier(i - 2);
+                        switch (tokens[i])
+                        {
+                            case "N":
+                                AddNormal(serverIdentifier, timeSlot);
+                                break;
+                            case "C":
+                                AddCrashed(serverIdentifier, timeSlot);
+                                break;
+                        }
+                        i++;
+                    }
+
+                    while (i < tokens.Length)
+                    {
+                        string[] pairs = tokens[i].TrimStart('(').TrimEnd(')').Split(',');
+                        AddSuspected(pairs[0], timeSlot, pairs[1]);
+                        i++;
+                    }
+
                     break;
 
                 default:
@@ -227,10 +283,38 @@ public sealed class ConfigurationParser
                 _transactionManagers.Add(identifier, address);
                 break;
         }
+        _serverIdentifiers.Add(identifier);
     }
 
     private void AddClient(string identifier, string filename)
     {
         _clients.Add(identifier, $"Config\\Client\\{filename}");
+    }
+
+    private void AddSuspected(string identifier, int slot, string suspected)
+    {
+        var key = new Tuple<string, int>(identifier, slot);
+        if (!_suspected.ContainsKey(key))
+        {
+            _suspected.Add(key, new List<string>());
+        }
+        _suspected[key].Add(suspected);
+    }
+
+    private void AddNormal(string identifier, int slot)
+    {
+        var key = new Tuple<string, int>(identifier, slot);
+        _failed.Add(key, false);
+    }
+
+    private void AddCrashed(string identifier, int slot)
+    {
+        var key = new Tuple<string, int>(identifier, slot);
+        _failed.Add(key, true);
+    }
+
+    private string GetNthServerIdentifier(int n)
+    {
+        return _serverIdentifiers[n];
     }
 }
