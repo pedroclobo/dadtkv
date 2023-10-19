@@ -34,8 +34,8 @@ public class DADTKVClientServiceImpl : DADTKVClientService.DADTKVClientServiceBa
                 _leaseFrontend.RequestLease(keys);
             }
 
-            // Wait for key leases
-            await _leaseFrontend.WaitLeaseAsync(keys);
+            // TODO: Wait for key leases
+            // await _leaseFrontend.WaitLeaseAsync(keys);
 
             // Perform Writes
             foreach (var dadInt in request.Write)

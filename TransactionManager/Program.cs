@@ -22,25 +22,22 @@ public class TransactionManager
             string host = configurationParser.ServerHost(identifier);
             int port = configurationParser.ServerPort(identifier);
 
-            List<Uri> transactionManagerURLS = configurationParser.TransactionManagerUrls();
-            transactionManagerURLS.Remove(new Uri(configurationParser.ServerUrl(identifier))); // Remove own URL
+            Dictionary<string, Uri> transactionManagerURLS = configurationParser.TransactionManagerUrls();
+            transactionManagerURLS.Remove(identifier); // Remove own URL
 
-            List<Uri> leaseManagerURLS = configurationParser.LeaseManagerUrls();
+            Dictionary<string, Uri> leaseManagerURLS = configurationParser.LeaseManagerUrls();
 
             // Create server
             State state = new State();
             URBFrontend urbFrontend = new URBFrontend(identifier, transactionManagerURLS);
             LeaseFrontend leaseFrontend = new LeaseFrontend(identifier, leaseManagerURLS);
 
-            LeasePropagationServiceImpl leasePropagationService = new LeasePropagationServiceImpl();
-            leasePropagationService.LeasesChanged += leaseFrontend.OnLeasesChanged;
-
             Grpc.Core.Server server = new Grpc.Core.Server
             {
                 Services = {
                     DADTKVClientService.BindService(new DADTKVClientServiceImpl(identifier, state, urbFrontend, leaseFrontend)),
                     URBService.BindService(new URBServiceImpl(identifier, state)),
-                    LeasePropagationService.BindService(leasePropagationService)
+                    PaxosLearnerService.BindService(new PaxosLearnerServiceImpl(configurationParser.LeaseManagerIdentifiers().Count()))
                 },
                 Ports = { new Grpc.Core.ServerPort(host, port, Grpc.Core.ServerCredentials.Insecure) }
             };

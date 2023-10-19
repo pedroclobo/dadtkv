@@ -1,27 +1,38 @@
 ﻿syntax = "proto3";
 
+import "google/protobuf/empty.proto";
 import "Protos/Common.proto";
 
 service PaxosService {
 	rpc Prepare(PrepareRequest) returns (PromiseResponse);
-	rpc Accept(AcceptRequest) returns (AcceptedResponse);
+	rpc Accept(AcceptRequest) returns (google.protobuf.Empty);
+}
+
+service PaxosLearnerService {
+	rpc Accepted(AcceptedResponse) returns (google.protobuf.Empty);
 }
 
 message PrepareRequest  {
-	int32 timestamp = 1;
+	string senderId = 1;
+	int32 timestamp = 2;
 }
 
 message PromiseResponse {
-	int32 timestamp = 1;
-	repeated Lease value = 2;
+	string senderId = 1;
+	int32 timestamp = 2;
+	repeated Lease value = 3;
+	bool hasValue = 4;
+	bool nack = 5;
 }
 
 message AcceptRequest {
-	int32 timestamp = 1;
-	repeated Lease value = 2;
+	string senderId = 1;
+	int32 timestamp = 2;
+	repeated Lease value = 3;
 }
 
 message AcceptedResponse {
-	int32 timestamp = 1;
-	repeated Lease value = 2;
+	string senderId = 1;
+	int32 timestamp = 2;
+	repeated Lease value = 3;
 }

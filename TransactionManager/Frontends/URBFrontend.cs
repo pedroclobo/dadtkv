@@ -7,12 +7,12 @@ public class URBFrontend : Frontend<URBService.URBServiceClient>
     private string _identifier;
     private int _majority;
 
-    public URBFrontend(string identifier, List<Uri> serverURLs) : base(serverURLs)
+    public URBFrontend(string identifier, Dictionary<string, Uri> serverURLs) : base(serverURLs)
     {
         _identifier = identifier;
 
         // Don't count with current process
-        _majority = (int)Math.Floor((double)_clients.Count / 2);
+        _majority = (int)Math.Floor((double)GetClients().Count / 2);
     }
 
     public override URBService.URBServiceClient CreateClient(GrpcChannel channel)
@@ -40,8 +40,9 @@ public class URBFrontend : Frontend<URBService.URBServiceClient>
             };
 
             List<Task<URBResponse>> tasks = new List<Task<URBResponse>>();
-            foreach (var client in _clients)
+            foreach (var pair in GetClients())
             {
+                var client = pair.Item2;
                 tasks.Add(Task.Run(() => client.URBDeliver(urbRequest)));
             }
 

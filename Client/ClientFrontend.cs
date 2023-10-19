@@ -7,7 +7,7 @@ public class ClientFrontend : Frontend<DADTKVClientService.DADTKVClientServiceCl
 {
     private string _identifier;
 
-    public ClientFrontend(string identifier, List<Uri> serverURLs) : base(serverURLs)
+    public ClientFrontend(string identifier, Dictionary<string, Uri> serverURLs) : base(serverURLs)
     {
         _identifier = identifier;
     }
@@ -28,7 +28,7 @@ public class ClientFrontend : Frontend<DADTKVClientService.DADTKVClientServiceCl
 
             var result = new List<DadInteger>();
 
-            var response = await _clients[0].TxSubmitAsync(request);
+            var response = await GetClient("TM1").TxSubmitAsync(request);
 
             foreach (var value in response.Values)
             {
@@ -52,8 +52,9 @@ public class ClientFrontend : Frontend<DADTKVClientService.DADTKVClientServiceCl
             Empty request = new Empty { };
 
             List<Task<StatusResponse>> tasks = new List<Task<StatusResponse>>();
-            foreach (var client in _clients)
+            foreach (var pair in GetClients())
             {
+                var client = pair.Item2;
                 tasks.Add(Task.Run(() => client.Status(request)));
             }
 

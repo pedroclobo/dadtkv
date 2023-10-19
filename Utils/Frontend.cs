@@ -4,29 +4,44 @@ namespace Utils;
 
 public abstract class Frontend<T>
 {
-    protected List<GrpcChannel> _channels;
-    protected List<T> _clients;
+    private Dictionary<string, GrpcChannel> _channels;
+    private Dictionary<string, T> _clients;
 
-    public Frontend(List<Uri> clientUrls)
+    public Frontend(Dictionary<string, Uri> clientUrls)
     {
-        _channels = new List<GrpcChannel>();
-        foreach (var serverURL in clientUrls)
-        {
-            _channels.Add(GrpcChannel.ForAddress(serverURL));
-        }
+        _channels = new Dictionary<string, GrpcChannel>();
+        _clients = new Dictionary<string, T>();
 
-        _clients = new List<T>();
-        foreach (var channel in _channels)
+        foreach (var pair in clientUrls)
         {
-            _clients.Add(CreateClient(channel));
+            GrpcChannel channel = GrpcChannel.ForAddress(pair.Value);
+            _channels.Add(pair.Key, channel);
+            _clients.Add(pair.Key, CreateClient(channel));
         }
     }
 
     public abstract T CreateClient(GrpcChannel channel);
 
+    public T GetClient(string identifier)
+    {
+        return _clients[identifier];
+    }
+
+    public List<Tuple<string, T>> GetClients()
+    {
+        List<Tuple<string, T>> clients = new();
+
+        foreach (var pair in _clients)
+        {
+            clients.Add(new Tuple<string, T>(pair.Key, pair.Value));
+        }
+
+        return clients;
+    }
+
     public void Shutdown()
     {
-        foreach (var channel in _channels)
+        foreach (var channel in _channels.Values)
         {
             channel.ShutdownAsync().Wait();
         }

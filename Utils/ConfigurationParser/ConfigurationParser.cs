@@ -24,6 +24,8 @@ public sealed class ConfigurationParser
     private Dictionary<Tuple<string, int>, List<string>> _suspected;
     private Dictionary<Tuple<string, int>, bool> _failed;
 
+    private int _currentTimeSlot;
+
     public int TimeSlots { get; private set; }
     public TimeSpan SlotDuration { get; private set; }
     public DateTime WallTime { get; set; }
@@ -37,6 +39,7 @@ public sealed class ConfigurationParser
         _serverIdentifiers = new List<string>();
         _suspected = new Dictionary<Tuple<string, int>, List<string>>();
         _failed = new Dictionary<Tuple<string, int>, bool>();
+        _currentTimeSlot = 1;
     }
 
     public static ConfigurationParser From(string filename)
@@ -120,9 +123,9 @@ public sealed class ConfigurationParser
         return _transactionManagers.Keys.ToList();
     }
 
-    public List<Uri> TransactionManagerUrls()
+    public Dictionary<string, Uri> TransactionManagerUrls()
     {
-        return _transactionManagers.Values.ToList();
+        return _transactionManagers;
     }
 
     public List<String> LeaseManagerIdentifiers()
@@ -130,9 +133,14 @@ public sealed class ConfigurationParser
         return _leaseManagers.Keys.ToList();
     }
 
-    public List<Uri> LeaseManagerUrls()
+    public Dictionary<string, Uri> LeaseManagerUrls()
     {
-        return _leaseManagers.Values.ToList();
+        return _leaseManagers;
+    }
+
+    public List<string> Suspected(string identifier)
+    {
+        return Suspected(identifier, _currentTimeSlot);
     }
 
     public List<string> Suspected(string identifier, int slot)
@@ -145,6 +153,11 @@ public sealed class ConfigurationParser
         return _suspected[key];
     }
 
+    public bool Failed(string identifier)
+    {
+        return Failed(identifier, _currentTimeSlot);
+    }
+
     public bool Failed(string identifier, int slot)
     {
         var key = new Tuple<string, int>(identifier, slot);
@@ -153,6 +166,11 @@ public sealed class ConfigurationParser
             return false;
         }
         return _failed[key];
+    }
+
+    public void Update(int slot)
+    {
+        _currentTimeSlot = slot;
     }
 
     public async Task WaitForWallTimeAsync()

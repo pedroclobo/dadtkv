@@ -1,5 +1,6 @@
 ﻿using Google.Protobuf.WellKnownTypes;
 using Grpc.Net.Client;
+using System.Runtime.CompilerServices;
 using TransactionManager.Services;
 using Utils;
 
@@ -9,7 +10,7 @@ public class LeaseFrontend : Frontend<LeaseService.LeaseServiceClient>
     private string _identifier;
     private List<string> _leaseKeys;
 
-    public LeaseFrontend(string identifier, List<Uri> leaseManagerUrls) : base(leaseManagerUrls)
+    public LeaseFrontend(string identifier, Dictionary<string, Uri> leaseManagerUrls) : base(leaseManagerUrls)
     {
         _identifier = identifier;
         _leaseKeys = new List<string>();
@@ -31,16 +32,15 @@ public class LeaseFrontend : Frontend<LeaseService.LeaseServiceClient>
                 Keys = { keys },
             };
 
-            Console.WriteLine("Requesting lease for keys: {0}", string.Join(", ", keys));
-
             List<Task<Empty>> tasks = new List<Task<Empty>>();
-            foreach (var client in _clients)
+            foreach (var pair in GetClients())
             {
+                string identifier = pair.Item1;
+                var client = pair.Item2;
+
+                Console.WriteLine($"Requesting lease for keys {string.Join(", ", keys)} to {identifier}");
                 tasks.Add(Task.Run(() => client.RequestLease(request)));
             }
-
-            Task.WhenAny(tasks);
-
         }
         catch (Exception e)
         {
@@ -64,29 +64,30 @@ public class LeaseFrontend : Frontend<LeaseService.LeaseServiceClient>
         }
     }
 
-    public void UpdateLeases(LeaseResponse response)
+    // TODO: Update leases
+    public void UpdateLeases(AcceptedResponse response)
     {
         lock (_leaseKeys)
         {
-            _leaseKeys.Clear();
-            _leaseKeys.AddRange(response.Leases.Where(l => l.TransactionManagerId == _identifier).SelectMany(l => l.Keys));
+            // _leaseKeys.Clear();
+            // _leaseKeys.AddRange(response.Leases.Where(l => l.TransactionManagerId == _identifier).SelectMany(l => l.Keys));
         }
 
         Console.WriteLine("Updated leases: {0}", string.Join(", ", _leaseKeys));
     }
 
-    public async Task WaitLeaseAsync(List<string> keys)
-    {
-        while (!HasLease(keys))
-        {
-            await Task.Delay(200);
-        }
+    // public async Task WaitLeaseAsync(List<string> keys)
+    // {
+    //     while (!HasLease(keys))
+    //     {
+    //         await Task.Delay(200);
+    //     }
 
-        return;
-    }
+    //     return;
+    // }
 
-    public void OnLeasesChanged(object sender, LeaseEventArgs args)
-    {
-        UpdateLeases(args.Response);
-    }
+    // public void OnLeasesChanged(object sender, LeaseEventArgs args)
+    // {
+    //     UpdateLeases(args.Response);
+    // }
 }

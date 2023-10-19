@@ -9,7 +9,6 @@
   <ItemGroup>
     <None Remove="Protos\Client.proto" />
     <None Remove="Protos\Lease.proto" />
-    <None Remove="Protos\LeasePropagation.proto" />
     <None Remove="Protos\Paxos.proto" />
     <None Remove="Protos\URB.proto" />
     <None Remove="Protos\Common.proto" />
@@ -26,7 +25,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Protobuf Include="Protos\LeasePropagation.proto" GrpcServices="Both" />
     <Protobuf Include="Protos\Paxos.proto" GrpcServices="Both" />
     <Protobuf Include="Protos\Lease.proto" GrpcServices="Both" />
     <Protobuf Include="Protos\Client.proto" GrpcServices="Both" />
