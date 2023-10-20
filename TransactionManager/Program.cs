@@ -31,13 +31,16 @@ public class TransactionManager
             State state = new State();
             URBFrontend urbFrontend = new URBFrontend(identifier, transactionManagerURLS);
             LeaseFrontend leaseFrontend = new LeaseFrontend(identifier, leaseManagerURLS);
+            LeaseManagementFrontend leaseManagementFrontend = new LeaseManagementFrontend(identifier, leaseManagerURLS);
+            LeaseQueue leaseQueue = new LeaseQueue(identifier);
 
             Grpc.Core.Server server = new Grpc.Core.Server
             {
                 Services = {
-                    DADTKVClientService.BindService(new DADTKVClientServiceImpl(identifier, state, urbFrontend, leaseFrontend)),
-                    URBService.BindService(new URBServiceImpl(identifier, state)),
-                    PaxosLearnerService.BindService(new PaxosLearnerServiceImpl(configurationParser.LeaseManagerIdentifiers().Count()))
+                    DADTKVClientService.BindService(new DADTKVClientServiceImpl(identifier, state, urbFrontend, leaseFrontend, leaseManagementFrontend, leaseQueue)),
+                    LeaseManagementService.BindService(new LeaseManagementServiceImpl(identifier, leaseQueue)),
+                    PaxosLearnerService.BindService(new PaxosLearnerServiceImpl(configurationParser.LeaseManagerIdentifiers().Count(), leaseQueue)),
+                    URBService.BindService(new URBServiceImpl(identifier, state))
                 },
                 Ports = { new Grpc.Core.ServerPort(host, port, Grpc.Core.ServerCredentials.Insecure) }
             };

@@ -10,3 +10,12 @@ message LeaseRequest  {
 	string transactionManagerId = 1;
 	repeated string keys = 2;
 }
+
+service LeaseManagementService {
+	rpc ReleaseLease(LeaseReleaseMessage) returns (google.protobuf.Empty);
+}
+
+message LeaseReleaseMessage {
+	string senderId = 1;
+	repeated string keys = 2;
+}

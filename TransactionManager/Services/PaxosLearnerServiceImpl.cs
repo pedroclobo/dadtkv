@@ -8,12 +8,14 @@ public class PaxosLearnerServiceImpl : PaxosLearnerService.PaxosLearnerServiceBa
     private Dictionary<int, int> _acknowledgments;
     private Dictionary<int, List<Lease>> _values;
     private int _majority;
-    // TODO: Add a class to manage the lease queues
-    public PaxosLearnerServiceImpl(int numberReplicas)
+    private LeaseQueue _leaseQueue;
+
+    public PaxosLearnerServiceImpl(int numberReplicas, LeaseQueue leaseQueue)
     {
         _acknowledgments = new();
         _values = new();
         _majority = (int)Math.Ceiling((double)numberReplicas / 2);
+        _leaseQueue = leaseQueue;
     }
 
     public List<Lease> Value(int timeSlot)
@@ -56,10 +58,10 @@ public class PaxosLearnerServiceImpl : PaxosLearnerService.PaxosLearnerServiceBa
                 {
                     _values.Add(timestamp, request.Value.ToList());
                 }
-
                 _values[timestamp] = request.Value.ToList();
 
-                // TODO: Add the value to the queue
+                // Add leases to the lease queue
+                _leaseQueue.AddLeases(request.Value.ToList());
 
                 Console.WriteLine("Received majority of accepted responses: {0}", request);
             }
