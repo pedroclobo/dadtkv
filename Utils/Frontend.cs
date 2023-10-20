@@ -27,6 +27,11 @@ public abstract class Frontend<T>
         return _clients[identifier];
     }
 
+    public T GetClient(int index)
+    {
+        return _clients.ElementAt(index).Value;
+    }
+
     public List<Tuple<string, T>> GetClients()
     {
         List<Tuple<string, T>> clients = new();
@@ -37,6 +42,11 @@ public abstract class Frontend<T>
         }
 
         return clients;
+    }
+
+    public int GetClientCount()
+    {
+        return _clients.Count;
     }
 
     public void Shutdown()

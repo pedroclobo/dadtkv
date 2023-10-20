@@ -6,10 +6,12 @@ namespace Client;
 public class ClientFrontend : Frontend<DADTKVClientService.DADTKVClientServiceClient>
 {
     private string _identifier;
+    private int _TM;
 
     public ClientFrontend(string identifier, Dictionary<string, Uri> serverURLs) : base(serverURLs)
     {
         _identifier = identifier;
+        _TM = HashString(_identifier) % GetClientCount();
     }
     public override DADTKVClientService.DADTKVClientServiceClient CreateClient(GrpcChannel channel)
     {
@@ -28,7 +30,7 @@ public class ClientFrontend : Frontend<DADTKVClientService.DADTKVClientServiceCl
 
             var result = new List<DadInteger>();
 
-            var response = await GetClient("TM1").TxSubmitAsync(request);
+            var response = await GetClient(_TM).TxSubmitAsync(request);
 
             foreach (var value in response.Values)
             {
@@ -66,5 +68,14 @@ public class ClientFrontend : Frontend<DADTKVClientService.DADTKVClientServiceCl
         }
 
         return new List<StatusResponse>();
+    }
+    private int HashString(string s)
+    {
+        int hash = 0;
+        foreach (char c in s)
+        {
+            hash += (hash * 31) + c;
+        }
+        return Math.Abs(hash);
     }
 }
