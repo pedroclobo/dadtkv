@@ -42,6 +42,14 @@ public class ClientFrontend : Frontend<DADTKVClientService.DADTKVClientServiceCl
 
             return result;
         }
+        catch (Grpc.Core.RpcException e)
+        {
+            Console.WriteLine(e.Message);
+            switchTM();
+
+            Console.WriteLine("Retrying status on {0}", GetTM());
+            return await TxSubmit(read, write);
+        }
         catch (Exception e)
         {
             Console.WriteLine(e.Message);
@@ -65,6 +73,14 @@ public class ClientFrontend : Frontend<DADTKVClientService.DADTKVClientServiceCl
 
             return (await Task.WhenAll(tasks)).ToList();
         }
+        catch (Grpc.Core.RpcException e)
+        {
+            Console.WriteLine(e.Message);
+            switchTM();
+
+            Console.WriteLine("Retrying status on {0}", GetTM());
+            return await Status();
+        }
         catch (Exception e)
         {
             Console.WriteLine(e.Message);
@@ -86,5 +102,13 @@ public class ClientFrontend : Frontend<DADTKVClientService.DADTKVClientServiceCl
             hash += (hash * 31) + c;
         }
         return Math.Abs(hash);
+    }
+
+    private int switchTM()
+    {   
+        _TM = (_TM + 1) % GetClientCount();
+        Console.WriteLine("Switching to {0}", GetTM());
+
+        return _TM;
     }
 }
