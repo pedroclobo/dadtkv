@@ -105,7 +105,7 @@ public class CommandParser
             {
                 TCommand tCommand = (TCommand)command;
 
-                Console.WriteLine("Request: {0}", command);
+                Console.WriteLine($"Request[{_frontend.GetTM()}] : {command}");
                 List<DadInteger> response = await _frontend.TxSubmit(tCommand.Read, tCommand.Write);
                 Console.WriteLine("Reply: [{0}]", string.Join(", ", response));
             }

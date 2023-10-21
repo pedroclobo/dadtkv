@@ -23,7 +23,7 @@ public class Client
         Console.WriteLine($"Starting at: {wallTime}");
 
         // Parse client script
-        var frontend = new ClientFrontend(identifier, configurationParser.TransactionManagerUrls());
+        var frontend = new ClientFrontend(identifier, configurationParser.TransactionManagerUrls(), configurationParser);
         var commandParser = new CommandParser(frontend, script);
         commandParser.Parse();
 

@@ -1,16 +1,19 @@
 ﻿using Google.Protobuf.WellKnownTypes;
 using Grpc.Net.Client;
 using Utils;
+using Utils.ConfigurationParser;
 
 namespace Client;
 public class ClientFrontend : Frontend<DADTKVClientService.DADTKVClientServiceClient>
 {
     private string _identifier;
+    private ConfigurationParser _parser;
     private int _TM;
 
-    public ClientFrontend(string identifier, Dictionary<string, Uri> serverURLs) : base(serverURLs)
+    public ClientFrontend(string identifier, Dictionary<string, Uri> serverURLs, ConfigurationParser parser) : base(serverURLs)
     {
         _identifier = identifier;
+        _parser = parser;
         _TM = HashString(_identifier) % GetClientCount();
     }
     public override DADTKVClientService.DADTKVClientServiceClient CreateClient(GrpcChannel channel)
@@ -69,6 +72,12 @@ public class ClientFrontend : Frontend<DADTKVClientService.DADTKVClientServiceCl
 
         return new List<StatusResponse>();
     }
+
+    public string GetTM()
+    {
+        return _parser.TransactionManagerIdentifiers()[_TM];
+    }
+
     private int HashString(string s)
     {
         int hash = 0;
