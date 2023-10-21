@@ -75,6 +75,7 @@ public class LeaseManager
                     Console.WriteLine("Press any key to exit...");
 
                     paxosFrontend.Shutdown();
+                    paxosLearnerFrontend.Shutdown();
                     server.ShutdownAsync().Wait();
 
                     timer.Dispose();
@@ -89,6 +90,7 @@ public class LeaseManager
                     Console.WriteLine("Press any key to exit...");
 
                     paxosFrontend.Shutdown();
+                    paxosLearnerFrontend.Shutdown();
                     server.ShutdownAsync().Wait();
 
                     timer.Dispose();
