@@ -81,6 +81,22 @@ public class TransactionManager
                     Environment.Exit(0);
                 }
 
+                if (failureDetector.AmIFaulty())
+                {
+                    Console.WriteLine("I am faulty! Shutting down!");
+                    Console.WriteLine("Press any key to exit...");
+
+                    urbFrontend.Shutdown();
+                    leaseFrontend.Shutdown();
+                    leaseManagementFrontend.Shutdown();
+                    server.ShutdownAsync().Wait();
+
+                    timer.Dispose();
+
+                    Console.ReadLine();
+                    Environment.Exit(0);
+                }
+
                 failureDetector.SetTimeSlot(currentTimeSlot);
 
                 Console.WriteLine($"\nTime Slot: {currentTimeSlot}");
