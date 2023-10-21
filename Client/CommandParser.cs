@@ -99,29 +99,32 @@ public class CommandParser
 
     public async Task Execute()
     {
-        foreach (Command command in _commands)
+        while (true)
         {
-            if (command is TCommand)
+            foreach (Command command in _commands)
             {
-                TCommand tCommand = (TCommand)command;
-
-                Console.WriteLine($"Request[{_frontend.GetTM()}] : {command}");
-                List<DadInteger> response = await _frontend.TxSubmit(tCommand.Read, tCommand.Write);
-                Console.WriteLine("Reply: [{0}]", string.Join(", ", response));
-            }
-            else if (command is WCommand)
-            {
-                WCommand wCommand = (WCommand)command;
-
-                Console.WriteLine("Waiting for {0} ms", wCommand.WaitTime);
-                Thread.Sleep(wCommand.WaitTime);
-            }
-            else if (command is SCommand)
-            {
-                var responses = await _frontend.Status();
-                foreach (var response in responses)
+                if (command is TCommand)
                 {
-                    Console.WriteLine($"Reply - S: {response}");
+                    TCommand tCommand = (TCommand)command;
+
+                    Console.WriteLine($"Request[{_frontend.GetTM()}] : {command}");
+                    List<DadInteger> response = await _frontend.TxSubmit(tCommand.Read, tCommand.Write);
+                    Console.WriteLine("Reply: [{0}]", string.Join(", ", response));
+                }
+                else if (command is WCommand)
+                {
+                    WCommand wCommand = (WCommand)command;
+
+                    Console.WriteLine("Waiting for {0} ms", wCommand.WaitTime);
+                    Thread.Sleep(wCommand.WaitTime);
+                }
+                else if (command is SCommand)
+                {
+                    var responses = await _frontend.Status();
+                    foreach (var response in responses)
+                    {
+                        Console.WriteLine($"Reply - S: {response}");
+                    }
                 }
             }
         }
