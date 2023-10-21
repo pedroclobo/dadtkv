@@ -1,6 +1,6 @@
 ﻿using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
-using Utils.ConfigurationParser;
+using Utils;
 
 namespace LeaseManager.Services;
 
@@ -10,14 +10,14 @@ public class PaxosLearnerServiceImpl : PaxosLearnerService.PaxosLearnerServiceBa
     private Dictionary<int, int> _acknowledgments;
     private Dictionary<int, List<Lease>> _values;
     private int _majority;
-    private ConfigurationParser _parser;
-    public PaxosLearnerServiceImpl(string identifier, int numberReplicas, ConfigurationParser parser)
+    private FailureDetector _failureDetector;
+    public PaxosLearnerServiceImpl(string identifier, int numberReplicas, FailureDetector failureDetector)
     {
+        _identifier = identifier;
         _acknowledgments = new();
         _values = new();
         _majority = (int)Math.Floor((double)numberReplicas / 2);
-        _parser = parser;
-        _identifier = identifier;
+        _failureDetector = failureDetector;
     }
 
     public List<Lease> Value(int timeSlot)
@@ -32,7 +32,7 @@ public class PaxosLearnerServiceImpl : PaxosLearnerService.PaxosLearnerServiceBa
     {
         try
         {
-            if (_parser.Suspected(_identifier).Contains(request.SenderId))
+            if (_failureDetector.Suspected(request.SenderId))
             {
                 Console.WriteLine($"Ignoring accepted response from {request.SenderId}");
                 return Task.FromResult(new Empty());

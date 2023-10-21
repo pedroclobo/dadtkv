@@ -6,10 +6,12 @@ namespace TransactionManager.Frontends;
 public class LeaseManagementFrontend : Frontend<LeaseManagementService.LeaseManagementServiceClient>
 {
     private string _identifier;
+    private FailureDetector _failureDetector;
 
-    public LeaseManagementFrontend(string identifier, Dictionary<string, Uri> leaseManagerUrls) : base(leaseManagerUrls)
+    public LeaseManagementFrontend(string identifier, Dictionary<string, Uri> transactionManagerUrls, FailureDetector failureDetector) : base(transactionManagerUrls)
     {
         _identifier = identifier;
+        _failureDetector = failureDetector;
     }
 
     public override LeaseManagementService.LeaseManagementServiceClient CreateClient(GrpcChannel channel)
@@ -34,7 +36,15 @@ public class LeaseManagementFrontend : Frontend<LeaseManagementService.LeaseMana
                 string identifier = pair.Item1;
                 var client = pair.Item2;
 
-                client.ReleaseLeaseAsync(request);
+                if (_failureDetector.Faulty(request.SenderId) || _failureDetector.Suspected(request.SenderId))
+                {
+                    Console.WriteLine($"Skipping lease release to {identifier}");
+                }
+                else
+                {
+                    Console.WriteLine($"Releasing leases for keys {string.Join(", ", keys)}");
+                    client.ReleaseLeaseAsync(request);
+                }
             }
         }
         catch (Exception e)

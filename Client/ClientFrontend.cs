@@ -1,7 +1,6 @@
 ﻿using Google.Protobuf.WellKnownTypes;
 using Grpc.Net.Client;
 using Utils;
-using Utils.ConfigurationParser;
 
 namespace Client;
 public class ClientFrontend : Frontend<DADTKVClientService.DADTKVClientServiceClient>

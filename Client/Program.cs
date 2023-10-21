@@ -1,5 +1,5 @@
 ﻿using Client.Commands;
-using Utils.ConfigurationParser;
+using Utils;
 
 namespace Client;
 
@@ -15,20 +15,22 @@ public class Client
         string identifier = args[0];
         string filename = args[1];
 
-        ConfigurationParser configurationParser = ConfigurationParser.From(filename);
-        string script = configurationParser.ClientScript(identifier);
-        DateTime wallTime = configurationParser.WallTime;
+        ConfigurationParser parser = new ConfigurationParser(filename);
+        FailureDetector failureDetector = new FailureDetector(identifier, parser);
+
+        string script = parser.ClientScript(identifier);
+        DateTime wallTime = parser.WallTime;
 
         Console.WriteLine($"Client {identifier} with script {script}");
         Console.WriteLine($"Starting at: {wallTime}");
 
         // Parse client script
-        var frontend = new ClientFrontend(identifier, configurationParser.TransactionManagerUrls(), configurationParser);
+        var frontend = new ClientFrontend(identifier, parser.TransactionManagerUrls(), parser);
         var commandParser = new CommandParser(frontend, script);
         commandParser.Parse();
 
         // Wait for wall time
-        await configurationParser.WaitForWallTimeAsync();
+        await parser.WaitForWallTimeAsync();
 
         Console.WriteLine("Press any key to exit...");
         Console.WriteLine();

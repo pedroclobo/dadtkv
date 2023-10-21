@@ -1,5 +1,5 @@
 ﻿using System.Diagnostics;
-using Utils.ConfigurationParser;
+using Utils;
 
 namespace Launcher;
 public class Launcher
@@ -16,7 +16,7 @@ public class Launcher
         string filename = args[0];
 
         // Initialize ConfigurationParser
-        ConfigurationParser parser = ConfigurationParser.From(filename);
+        ConfigurationParser parser = new ConfigurationParser(filename);
 
         // Override Wall Time from Configuration File
         if (args.Length == 2 && args[1].StartsWith("-o"))

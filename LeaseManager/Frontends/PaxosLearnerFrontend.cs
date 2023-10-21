@@ -1,16 +1,15 @@
 ﻿using Grpc.Net.Client;
 using Utils;
-using Utils.ConfigurationParser;
 
 namespace LeaseManager.Frontends;
 public class PaxosLearnerFrontend : Frontend<PaxosLearnerService.PaxosLearnerServiceClient>
 {
     private string _identifier;
-    private ConfigurationParser _parser;
-    public PaxosLearnerFrontend(string identifier, Dictionary<string, Uri> serverURLs, ConfigurationParser parser) : base(serverURLs)
+    private FailureDetector _failureDetector;
+    public PaxosLearnerFrontend(string identifier, Dictionary<string, Uri> serverURLs, FailureDetector failureDetector) : base(serverURLs)
     {
         _identifier = identifier;
-        _parser = parser;
+        _failureDetector = failureDetector;
     }
 
     public void Accepted(AcceptedResponse response)
@@ -22,11 +21,14 @@ public class PaxosLearnerFrontend : Frontend<PaxosLearnerService.PaxosLearnerSer
                 var identifier = pair.Item1;
                 var client = pair.Item2;
 
-                if (!_parser.Suspected(_identifier).Contains(identifier))
+                if (_failureDetector.Faulty(identifier) || _failureDetector.Suspected(identifier))
                 {
-                    Console.WriteLine($"Sending accepted response {response} to {identifier}.");
-                    client.Accepted(response);
+                    Console.WriteLine($"Skipping sending accepted response to {identifier}");
+                    continue;
                 }
+
+                Console.WriteLine($"Sending accepted response {response} to {identifier}.");
+                client.Accepted(response);
             }
         }
         catch (Exception e)

@@ -1,7 +1,6 @@
 ﻿using Google.Protobuf.WellKnownTypes;
 using Grpc.Net.Client;
 using Utils;
-using Utils.ConfigurationParser;
 
 namespace LeaseManager.Frontends;
 public class PaxosFrontend : Frontend<PaxosService.PaxosServiceClient>
@@ -15,10 +14,10 @@ public class PaxosFrontend : Frontend<PaxosService.PaxosServiceClient>
     private List<Lease>? _value;
     private List<Lease>? _acceptedValue;
 
-    private ConfigurationParser _parser;
+    private FailureDetector _failureDetector;
 
     private PaxosLearnerFrontend _learnerFrontend;
-    public PaxosFrontend(string identifier, State state, Dictionary<string, Uri> serverURLs, Dictionary<string, Uri> tmURls, ConfigurationParser parser) : base(serverURLs)
+    public PaxosFrontend(string identifier, State state, Dictionary<string, Uri> serverURLs, Dictionary<string, Uri> tmURls, FailureDetector failureDetector) : base(serverURLs)
     {
         _identifier = identifier;
         _state = state;
@@ -30,7 +29,7 @@ public class PaxosFrontend : Frontend<PaxosService.PaxosServiceClient>
         // Don't count with current process
         _majority = (int)Math.Floor((double)GetClients().Count / 2);
 
-        _parser = parser;
+        _failureDetector = failureDetector;
 
         // All TM's and other LM's are learners
         var urls = new Dictionary<string, Uri>(serverURLs);
@@ -38,7 +37,7 @@ public class PaxosFrontend : Frontend<PaxosService.PaxosServiceClient>
         {
             urls.Add(pair.Key, pair.Value);
         }
-        _learnerFrontend = new PaxosLearnerFrontend(identifier, urls, parser);
+        _learnerFrontend = new PaxosLearnerFrontend(identifier, urls, failureDetector);
     }
 
     public override PaxosService.PaxosServiceClient CreateClient(GrpcChannel channel)
@@ -50,7 +49,8 @@ public class PaxosFrontend : Frontend<PaxosService.PaxosServiceClient>
     {
         try
         {
-            if (await PrepareDeliver(timeSlot)) {
+            if (await PrepareDeliver(timeSlot))
+            {
                 AcceptDeliver(timeSlot);
             }
         }
@@ -79,11 +79,14 @@ public class PaxosFrontend : Frontend<PaxosService.PaxosServiceClient>
                 string identifier = pair.Item1;
                 var client = pair.Item2;
 
-                if (!_parser.Suspected(_identifier).Contains(identifier))
+                if (_failureDetector.Faulty(identifier) || _failureDetector.Suspected(identifier))
                 {
-                    Console.WriteLine($"Sending prepare request {request} to {identifier}.");
-                    tasks.Add(Task.Run(() => client.Prepare(request)));
+                    Console.WriteLine($"Skipping prepare request to {identifier}");
+                    continue;
                 }
+
+                Console.WriteLine($"Sending prepare request {request} to {identifier}");
+                tasks.Add(Task.Run(() => client.Prepare(request)));
             }
 
             // Wait for majority of positive promises
@@ -91,13 +94,6 @@ public class PaxosFrontend : Frontend<PaxosService.PaxosServiceClient>
             while (positive < _majority)
             {
                 Task<PromiseResponse> completedTask = await Task.WhenAny(tasks);
-
-                if (_parser.Suspected(_identifier).Contains(completedTask.Result.SenderId))
-                {
-                    Console.WriteLine($"Ignoring promise response from {completedTask.Result.SenderId}");
-                    tasks.Remove(completedTask);
-                    continue;
-                }
 
                 Console.WriteLine($"Received promise response {completedTask.Result}");
 
@@ -164,11 +160,13 @@ public class PaxosFrontend : Frontend<PaxosService.PaxosServiceClient>
                 var identifier = pair.Item1;
                 var client = pair.Item2;
 
-                if (!_parser.Suspected(_identifier, timeSlot).Contains(identifier))
+                if (_failureDetector.Faulty(identifier) || _failureDetector.Suspected(identifier))
                 {
-                    Console.WriteLine($"Sending accept request {request} to {identifier}.");
-                    tasks.Add(Task.Run(() => client.Accept(request)));
+                    Console.WriteLine($"Skipping sending accept request to {identifier}");
+                    continue;
                 }
+                Console.WriteLine($"Sending accept request {request} to {identifier}.");
+                tasks.Add(Task.Run(() => client.Accept(request)));
             }
 
             // TODO: Update accepted value

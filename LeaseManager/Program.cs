@@ -1,6 +1,6 @@
 ﻿using LeaseManager.Frontends;
 using LeaseManager.Services;
-using Utils.ConfigurationParser;
+using Utils;
 
 namespace LeaseManager;
 
@@ -18,7 +18,8 @@ public class LeaseManager
             string identifier = args[0];
             string filename = args[1];
 
-            ConfigurationParser parser = ConfigurationParser.From(filename);
+            ConfigurationParser parser = new ConfigurationParser(filename);
+            FailureDetector failureDetector = new FailureDetector(identifier, parser);
             string host = parser.ServerHost(identifier);
             int port = parser.ServerPort(identifier);
 
@@ -31,20 +32,20 @@ public class LeaseManager
             // Create server
             State state = new State();
             LeaderManager leaderManager = new LeaderManager(identifier, leaseManagerIdentifiers, parser);
-            PaxosFrontend paxosFrontend = new PaxosFrontend(identifier, state, leaseManagerUrls, transactionManagerURLS, parser);
+            PaxosFrontend paxosFrontend = new PaxosFrontend(identifier, state, leaseManagerUrls, transactionManagerURLS, failureDetector);
             Dictionary<string, Uri> urls = new Dictionary<string, Uri>(leaseManagerUrls);
             foreach (var pair in transactionManagerURLS)
             {
                 urls.Add(pair.Key, pair.Value);
             }
-            PaxosLearnerFrontend paxosLearnerFrontend = new PaxosLearnerFrontend(identifier, urls, parser);
+            PaxosLearnerFrontend paxosLearnerFrontend = new PaxosLearnerFrontend(identifier, urls, failureDetector);
 
             Grpc.Core.Server server = new Grpc.Core.Server
             {
                 Services = {
                     LeaseService.BindService(new LeaseServiceImpl(state)),
-                    PaxosService.BindService(new PaxosServiceImpl(identifier, paxosLearnerFrontend, parser)),
-                    PaxosLearnerService.BindService(new PaxosLearnerServiceImpl(identifier, parser.LeaseManagerIdentifiers().Count(), parser))
+                    PaxosService.BindService(new PaxosServiceImpl(identifier, paxosLearnerFrontend, failureDetector)),
+                    PaxosLearnerService.BindService(new PaxosLearnerServiceImpl(identifier, parser.LeaseManagerIdentifiers().Count(), failureDetector))
                 },
                 Ports = { new Grpc.Core.ServerPort(host, port, Grpc.Core.ServerCredentials.Insecure) }
             };
@@ -63,7 +64,6 @@ public class LeaseManager
             int currentTimeSlot = 1;
             int timeSlots = parser.TimeSlots;
             TimeSpan slotDuration = parser.SlotDuration;
-            parser.Update(currentTimeSlot);
 
             // TODO: Hardcoded Leader
             Timer timer = null;
@@ -99,7 +99,7 @@ public class LeaseManager
                     Environment.Exit(0);
                 }
 
-                parser.Update(currentTimeSlot);
+                failureDetector.SetTimeSlot(currentTimeSlot);
 
                 Console.WriteLine($"\nTime Slot: {currentTimeSlot}");
 

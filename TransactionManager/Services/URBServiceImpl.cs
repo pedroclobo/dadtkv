@@ -1,19 +1,28 @@
 ﻿using Grpc.Core;
+using Utils;
 
 namespace TransactionManager.Services;
 public class URBServiceImpl : URBService.URBServiceBase
 {
     private string _identifier;
     private State _state;
-    public URBServiceImpl(string identifier, State state)
+    private FailureDetector _failureDetector;
+    public URBServiceImpl(string identifier, State state, FailureDetector failureDetector)
     {
         _identifier = identifier;
         _state = state;
+        _failureDetector = failureDetector;
     }
     public override Task<URBResponse> URBDeliver(URBRequest request, ServerCallContext context)
     {
         try
         {
+            if (_failureDetector.Suspected(request.SenderId))
+            {
+                Console.WriteLine($"Ignoring URB broadcast from {request.SenderId}");
+                return Task.FromResult(new URBResponse { });
+            }
+
             Console.WriteLine("Received URB broadcast from {0}", request.SenderId);
 
             // Perform Writes

@@ -1,4 +1,4 @@
-﻿using Utils.ConfigurationParser;
+﻿using Utils;
 
 namespace LeaseManager;
 

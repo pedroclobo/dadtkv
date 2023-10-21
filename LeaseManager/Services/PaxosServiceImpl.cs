@@ -1,7 +1,7 @@
 ﻿using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 using LeaseManager.Frontends;
-using Utils.ConfigurationParser;
+using Utils;
 
 namespace LeaseManager.Services;
 
@@ -14,8 +14,8 @@ public class PaxosServiceImpl : PaxosService.PaxosServiceBase
     private List<Lease>? _value; // TODO: create c# class
 
     private PaxosLearnerFrontend _learnerFrontend;
-    private ConfigurationParser _parser;
-    public PaxosServiceImpl(string identifier, PaxosLearnerFrontend learnerFrontend, ConfigurationParser parser)
+    private FailureDetector _failureDetector;
+    public PaxosServiceImpl(string identifier, PaxosLearnerFrontend learnerFrontend, FailureDetector failureDetector)
     {
         _identifier = identifier;
 
@@ -24,13 +24,13 @@ public class PaxosServiceImpl : PaxosService.PaxosServiceBase
         _value = null;
 
         _learnerFrontend = learnerFrontend;
-        _parser = parser;
+        _failureDetector = failureDetector;
     }
     public override Task<PromiseResponse> Prepare(PrepareRequest request, ServerCallContext context)
     {
         try
         {
-            if (_parser.Suspected(_identifier).Contains(request.SenderId))
+            if (_failureDetector.Suspected(request.SenderId))
             {
                 Console.WriteLine($"Ignoring prepare request: {request}");
                 return Task.FromResult(new PromiseResponse { SenderId = _identifier, HasValue = false, Nack = true }); ;
@@ -86,7 +86,7 @@ public class PaxosServiceImpl : PaxosService.PaxosServiceBase
     {
         try
         {
-            if (_parser.Suspected(_identifier).Contains(request.SenderId))
+            if (_failureDetector.Suspected(request.SenderId))
             {
                 Console.WriteLine($"Ignoring accept request: {request}");
                 return Task.FromResult(new Empty());

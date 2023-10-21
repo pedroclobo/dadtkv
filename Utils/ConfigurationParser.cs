@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Dynamic;
 
-namespace Utils.ConfigurationParser;
+namespace Utils;
 
 enum ServerType
 {
@@ -11,7 +11,6 @@ enum ServerType
 
 public sealed class ConfigurationParser
 {
-    private static ConfigurationParser? instance = null;
     private static readonly object lockObject = new object();
 
     private string _filename;
@@ -24,13 +23,11 @@ public sealed class ConfigurationParser
     private Dictionary<Tuple<string, int>, List<string>> _suspected;
     private Dictionary<Tuple<string, int>, bool> _failed;
 
-    private int _currentTimeSlot;
-
     public int TimeSlots { get; private set; }
     public TimeSpan SlotDuration { get; private set; }
     public DateTime WallTime { get; set; }
 
-    private ConfigurationParser(string filename)
+    public ConfigurationParser(string filename)
     {
         _filename = filename;
         _clients = new Dictionary<string, string>();
@@ -39,24 +36,11 @@ public sealed class ConfigurationParser
         _serverIdentifiers = new List<string>();
         _suspected = new Dictionary<Tuple<string, int>, List<string>>();
         _failed = new Dictionary<Tuple<string, int>, bool>();
-        _currentTimeSlot = 1;
+
+        Parse();
     }
 
-    public static ConfigurationParser From(string filename)
-    {
-        lock (lockObject)
-        {
-            if (instance == null)
-            {
-                instance = new ConfigurationParser(filename);
-                instance.Parse();
-            }
-        }
-
-        return instance;
-    }
-
-    public List<String> ClientIdentifiers()
+    public List<string> ClientIdentifiers()
     {
         return _clients.Keys.ToList();
     }
@@ -118,7 +102,7 @@ public sealed class ConfigurationParser
         }
     }
 
-    public List<String> TransactionManagerIdentifiers()
+    public List<string> TransactionManagerIdentifiers()
     {
         return _transactionManagers.Keys.ToList();
     }
@@ -128,7 +112,7 @@ public sealed class ConfigurationParser
         return _transactionManagers;
     }
 
-    public List<String> LeaseManagerIdentifiers()
+    public List<string> LeaseManagerIdentifiers()
     {
         return _leaseManagers.Keys.ToList();
     }
@@ -138,9 +122,9 @@ public sealed class ConfigurationParser
         return _leaseManagers;
     }
 
-    public List<string> Suspected(string identifier)
+    public int NumberLeaseManagers()
     {
-        return Suspected(identifier, _currentTimeSlot);
+        return _leaseManagers.Count;
     }
 
     public List<string> Suspected(string identifier, int slot)
@@ -153,11 +137,6 @@ public sealed class ConfigurationParser
         return _suspected[key];
     }
 
-    public bool Failed(string identifier)
-    {
-        return Failed(identifier, _currentTimeSlot);
-    }
-
     public bool Failed(string identifier, int slot)
     {
         var key = new Tuple<string, int>(identifier, slot);
@@ -166,11 +145,6 @@ public sealed class ConfigurationParser
             return false;
         }
         return _failed[key];
-    }
-
-    public void Update(int slot)
-    {
-        _currentTimeSlot = slot;
     }
 
     public async Task WaitForWallTimeAsync()
@@ -203,7 +177,7 @@ public sealed class ConfigurationParser
         File.WriteAllLines(_filename, lines);
     }
 
-    public void Parse()
+    private void Parse()
     {
         var lines = File.ReadAllLines(_filename);
         foreach (var line in lines)

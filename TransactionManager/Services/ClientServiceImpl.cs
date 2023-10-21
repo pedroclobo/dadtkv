@@ -1,21 +1,24 @@
 ﻿using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 using TransactionManager.Frontends;
+using Utils;
 
 namespace TransactionManager.Services;
 public class DADTKVClientServiceImpl : DADTKVClientService.DADTKVClientServiceBase
 {
     private string _identifier;
     private State _state;
+    private FailureDetector _failureDetector;
     private URBFrontend _urbFrontend;
     private LeaseFrontend _leaseFrontend;
     private LeaseQueue _leaseQueue;
     private LeaseManagementFrontend _leaseManagementFrontend;
 
-    public DADTKVClientServiceImpl(string identifier, State state, URBFrontend urbFrontend, LeaseFrontend leaseFrontend, LeaseManagementFrontend leaseManagementFrontend, LeaseQueue leaseQueue)
+    public DADTKVClientServiceImpl(string identifier, State state, FailureDetector failureDetector, URBFrontend urbFrontend, LeaseFrontend leaseFrontend, LeaseManagementFrontend leaseManagementFrontend, LeaseQueue leaseQueue)
     {
         _identifier = identifier;
         _state = state;
+        _failureDetector = failureDetector;
         _urbFrontend = urbFrontend;
         _leaseFrontend = leaseFrontend;
         _leaseManagementFrontend = leaseManagementFrontend;
@@ -64,6 +67,7 @@ public class DADTKVClientServiceImpl : DADTKVClientService.DADTKVClientServiceBa
                 }
 
                 // Only propagate write operations
+                // TODO: await
                 if (request.Write.Count > 0)
                 {
                     _urbFrontend.URBDeliver(request);

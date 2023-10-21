@@ -1,6 +1,6 @@
 ﻿using TransactionManager.Frontends;
 using TransactionManager.Services;
-using Utils.ConfigurationParser;
+using Utils;
 
 namespace TransactionManager;
 
@@ -18,7 +18,9 @@ public class TransactionManager
             string identifier = args[0];
             string filename = args[1];
 
-            ConfigurationParser parser = ConfigurationParser.From(filename);
+            ConfigurationParser parser = new ConfigurationParser(filename);
+            FailureDetector failureDetector = new FailureDetector(identifier, parser);
+
             string host = parser.ServerHost(identifier);
             int port = parser.ServerPort(identifier);
 
@@ -29,18 +31,18 @@ public class TransactionManager
 
             // Create server
             State state = new State();
-            URBFrontend urbFrontend = new URBFrontend(identifier, transactionManagerURLS);
-            LeaseFrontend leaseFrontend = new LeaseFrontend(identifier, leaseManagerURLS);
-            LeaseManagementFrontend leaseManagementFrontend = new LeaseManagementFrontend(identifier, leaseManagerURLS);
+            URBFrontend urbFrontend = new URBFrontend(identifier, transactionManagerURLS, failureDetector);
+            LeaseFrontend leaseFrontend = new LeaseFrontend(identifier, leaseManagerURLS, failureDetector);
+            LeaseManagementFrontend leaseManagementFrontend = new LeaseManagementFrontend(identifier, leaseManagerURLS, failureDetector);
             LeaseQueue leaseQueue = new LeaseQueue(identifier);
 
             Grpc.Core.Server server = new Grpc.Core.Server
             {
                 Services = {
-                    DADTKVClientService.BindService(new DADTKVClientServiceImpl(identifier, state, urbFrontend, leaseFrontend, leaseManagementFrontend, leaseQueue)),
-                    LeaseManagementService.BindService(new LeaseManagementServiceImpl(identifier, leaseQueue)),
-                    PaxosLearnerService.BindService(new PaxosLearnerServiceImpl(parser.LeaseManagerIdentifiers().Count(), leaseQueue)),
-                    URBService.BindService(new URBServiceImpl(identifier, state))
+                    DADTKVClientService.BindService(new DADTKVClientServiceImpl(identifier, state, failureDetector, urbFrontend, leaseFrontend, leaseManagementFrontend, leaseQueue)),
+                    LeaseManagementService.BindService(new LeaseManagementServiceImpl(identifier, failureDetector, leaseQueue)),
+                    PaxosLearnerService.BindService(new PaxosLearnerServiceImpl(parser.NumberLeaseManagers(), leaseQueue)),
+                    URBService.BindService(new URBServiceImpl(identifier, state, failureDetector))
                 },
                 Ports = { new Grpc.Core.ServerPort(host, port, Grpc.Core.ServerCredentials.Insecure) }
             };
@@ -59,7 +61,6 @@ public class TransactionManager
             int currentTimeSlot = 1;
             int timeSlots = parser.TimeSlots;
             TimeSpan slotDuration = parser.SlotDuration;
-            parser.Update(currentTimeSlot);
 
             Timer timer = null;
             timer = new Timer(async _ =>
@@ -80,7 +81,7 @@ public class TransactionManager
                     Environment.Exit(0);
                 }
 
-                parser.Update(currentTimeSlot);
+                failureDetector.SetTimeSlot(currentTimeSlot);
 
                 Console.WriteLine($"\nTime Slot: {currentTimeSlot}");
 
