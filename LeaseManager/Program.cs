@@ -31,7 +31,6 @@ public class LeaseManager
 
             // Create server
             State state = new State();
-            LeaderManager leaderManager = new LeaderManager(identifier, leaseManagerIdentifiers, parser);
             PaxosFrontend paxosFrontend = new PaxosFrontend(identifier, state, leaseManagerUrls, transactionManagerURLS, failureDetector);
             Dictionary<string, Uri> urls = new Dictionary<string, Uri>(leaseManagerUrls);
             foreach (var pair in transactionManagerURLS)
@@ -84,9 +83,9 @@ public class LeaseManager
                     Environment.Exit(0);
                 }
 
-                if (leaderManager.AmIFailed(currentTimeSlot))
+                if (failureDetector.AmIFaulty())
                 {
-                    Console.WriteLine("I am failed! Shutting down!");
+                    Console.WriteLine("I am faulty! Shutting down!");
                     Console.WriteLine("Press any key to exit...");
 
                     paxosFrontend.Shutdown();
@@ -103,7 +102,7 @@ public class LeaseManager
 
                 Console.WriteLine($"\nTime Slot: {currentTimeSlot}");
 
-                if (currentTimeSlot <= timeSlots && leaderManager.AmILeader(currentTimeSlot))
+                if (currentTimeSlot <= timeSlots && failureDetector.AmILeader())
                 {
                     Console.WriteLine($"I am the leader for epoch {currentTimeSlot}. Running paxos");
                     paxosFrontend.Paxos(currentTimeSlot);

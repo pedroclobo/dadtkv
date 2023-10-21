@@ -1,4 +1,6 @@
-﻿namespace Utils;
+﻿using Google.Protobuf.Collections;
+
+namespace Utils;
 
 public class FailureDetector
 {
@@ -7,6 +9,7 @@ public class FailureDetector
     private Dictionary<int, List<string>> _suspected;
     private List<string> _faulty;
     private int? _faultyTimeslot; // timeslot in which the current process fails
+    private List<string> _leaseManagerIdentifiers;
 
     public FailureDetector(string identifier, ConfigurationParser parser)
     {
@@ -25,6 +28,9 @@ public class FailureDetector
         }
 
         _faulty = new();
+
+        _leaseManagerIdentifiers = parser.LeaseManagerIdentifiers();
+        _leaseManagerIdentifiers.Sort();
     }
 
     public void SetTimeSlot(int slot)
@@ -50,5 +56,16 @@ public class FailureDetector
     public bool AmIFaulty()
     {
         return _currentTimeSlot >= _faultyTimeslot;
+    }
+
+    public bool AmILeader()
+    {
+        int index = 0;
+        while (Suspected(_leaseManagerIdentifiers[index]))
+        {
+            index = (index + 1) % _leaseManagerIdentifiers.Count;
+        }
+
+        return _identifier == _leaseManagerIdentifiers[index];
     }
 }
