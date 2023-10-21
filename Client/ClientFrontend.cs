@@ -6,14 +6,17 @@ namespace Client;
 public class ClientFrontend : Frontend<DADTKVClientService.DADTKVClientServiceClient>
 {
     private string _identifier;
-    private ConfigurationParser _parser;
-    private int _TM;
+    private FailureDetector _failureDetector;
+    private int _tmIndex;
+    private List<string> _transactionManagerIdentifiers;
 
-    public ClientFrontend(string identifier, Dictionary<string, Uri> serverURLs, ConfigurationParser parser) : base(serverURLs)
+    public ClientFrontend(string identifier, Dictionary<string, Uri> transactionManagerUrls, FailureDetector failureDetector) : base(transactionManagerUrls)
     {
         _identifier = identifier;
-        _parser = parser;
-        _TM = HashString(_identifier) % GetClientCount();
+        _failureDetector = failureDetector;
+        _transactionManagerIdentifiers = transactionManagerUrls.Keys.ToList();
+        _transactionManagerIdentifiers.Sort();
+        _tmIndex = HashString(_identifier) % GetClientCount();
     }
     public override DADTKVClientService.DADTKVClientServiceClient CreateClient(GrpcChannel channel)
     {
@@ -32,7 +35,7 @@ public class ClientFrontend : Frontend<DADTKVClientService.DADTKVClientServiceCl
 
             var result = new List<DadInteger>();
 
-            var response = await GetClient(_TM).TxSubmitAsync(request);
+            var response = await GetClient(_tmIndex).TxSubmitAsync(request);
 
             foreach (var value in response.Values)
             {
@@ -43,10 +46,12 @@ public class ClientFrontend : Frontend<DADTKVClientService.DADTKVClientServiceCl
         }
         catch (Grpc.Core.RpcException e)
         {
-            Console.WriteLine(e.Message);
-            switchTM();
+            Console.WriteLine($"Failed to send request to {GetTM()}, marking it as failed");
+            _failureDetector.AddFailed(GetTM());
 
-            Console.WriteLine("Retrying status on {0}", GetTM());
+            switchTM();
+            Console.WriteLine($"Retrying with {GetTM()}");
+
             return await TxSubmit(read, write);
         }
         catch (Exception e)
@@ -74,10 +79,12 @@ public class ClientFrontend : Frontend<DADTKVClientService.DADTKVClientServiceCl
         }
         catch (Grpc.Core.RpcException e)
         {
-            Console.WriteLine(e.Message);
-            switchTM();
+            Console.WriteLine($"Failed to send request to {GetTM()}, marking it as failed");
+            _failureDetector.AddFailed(GetTM());
 
-            Console.WriteLine("Retrying status on {0}", GetTM());
+            switchTM();
+            Console.WriteLine($"Retrying with {GetTM()}");
+
             return await Status();
         }
         catch (Exception e)
@@ -90,7 +97,7 @@ public class ClientFrontend : Frontend<DADTKVClientService.DADTKVClientServiceCl
 
     public string GetTM()
     {
-        return _parser.TransactionManagerIdentifiers()[_TM];
+        return _transactionManagerIdentifiers[_tmIndex];
     }
 
     private int HashString(string s)
@@ -103,11 +110,12 @@ public class ClientFrontend : Frontend<DADTKVClientService.DADTKVClientServiceCl
         return Math.Abs(hash);
     }
 
-    private int switchTM()
-    {   
-        _TM = (_TM + 1) % GetClientCount();
-        Console.WriteLine("Switching to {0}", GetTM());
-
-        return _TM;
+    private void switchTM()
+    {
+        // TODO: this could loop forever
+        while (_failureDetector.Faulty(GetTM()))
+        {
+            _tmIndex = (_tmIndex + 1) % GetClientCount();
+        }
     }
 }
