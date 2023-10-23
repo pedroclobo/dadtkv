@@ -53,6 +53,13 @@ public class DADTKVClientServiceImpl : DADTKVClientService.DADTKVClientServiceBa
 
             lock (_leaseQueue)
             {
+                // Only propagate write operations
+                // TODO: await
+                if (request.Write.Count > 0)
+                {
+                    _urbFrontend.URBDeliver(request);
+                }
+
                 // Perform Writes
                 foreach (var dadInt in request.Write)
                 {
@@ -64,13 +71,6 @@ public class DADTKVClientServiceImpl : DADTKVClientService.DADTKVClientServiceBa
                 foreach (var key in request.Read)
                 {
                     values.Add(new DadInt { Key = key, Value = _state.Get(key) });
-                }
-
-                // Only propagate write operations
-                // TODO: await
-                if (request.Write.Count > 0)
-                {
-                    _urbFrontend.URBDeliver(request);
                 }
 
                 // Liberate leases if someone else wants them

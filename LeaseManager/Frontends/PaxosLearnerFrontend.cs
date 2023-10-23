@@ -28,7 +28,16 @@ public class PaxosLearnerFrontend : Frontend<PaxosLearnerService.PaxosLearnerSer
                 }
 
                 Console.WriteLine($"Sending accepted response {response} to {identifier}.");
-                client.Accepted(response);
+                try
+                {
+                    client.Accepted(response);
+                }
+                catch (Grpc.Core.RpcException e)
+                {
+                    Console.WriteLine($"Failed to send accept response {response} to {identifier}, marking it as faulty");
+                    _failureDetector.AddFaulty(identifier);
+                }
+
             }
         }
         catch (Exception e)

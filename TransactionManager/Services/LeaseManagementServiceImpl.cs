@@ -25,7 +25,7 @@ public class LeaseManagementServiceImpl: LeaseManagementService.LeaseManagementS
             return Task.FromResult(new Empty());
         }
 
-        Console.WriteLine($"Received lease release request: {request}");
+        Console.WriteLine($"Received lease release request {request} from {request.SenderId}");
 
         lock (_leaseQueue)
         {

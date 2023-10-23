@@ -116,7 +116,7 @@ public class CommandParser
                     WCommand wCommand = (WCommand)command;
 
                     Console.WriteLine("Waiting for {0} ms", wCommand.WaitTime);
-                    Thread.Sleep(wCommand.WaitTime);
+                    await Task.Delay(wCommand.WaitTime);
                 }
                 else if (command is SCommand)
                 {

@@ -33,7 +33,7 @@ public class TransactionManager
             State state = new State();
             URBFrontend urbFrontend = new URBFrontend(identifier, transactionManagerURLS, failureDetector);
             LeaseFrontend leaseFrontend = new LeaseFrontend(identifier, leaseManagerURLS, failureDetector);
-            LeaseManagementFrontend leaseManagementFrontend = new LeaseManagementFrontend(identifier, leaseManagerURLS, failureDetector);
+            LeaseManagementFrontend leaseManagementFrontend = new LeaseManagementFrontend(identifier, transactionManagerURLS, failureDetector);
             LeaseQueue leaseQueue = new LeaseQueue(identifier);
 
             Grpc.Core.Server server = new Grpc.Core.Server

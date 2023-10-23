@@ -49,23 +49,23 @@ public class PaxosLearnerServiceImpl : PaxosLearnerService.PaxosLearnerServiceBa
                     _acknowledgments.Add(timestamp, 0);
                 }
                 _acknowledgments[timestamp]++;
-            }
 
-            if (_acknowledgments[timestamp] == _majority)
-            {
-                _acknowledgments.Remove(timestamp);
-                if (!_values.ContainsKey(timestamp))
+                if (_acknowledgments[timestamp] == _majority)
                 {
-                    _values.Add(timestamp, request.Value.ToList());
+                    _acknowledgments.Remove(timestamp);
+                    if (!_values.ContainsKey(timestamp))
+                    {
+                        _values.Add(timestamp, request.Value.ToList());
+                    }
+                    _values[timestamp] = request.Value.ToList();
+
+                    // Add leases to the lease queue
+                    _leaseQueue.AddLeases(request.Value.ToList());
+
+                    Console.WriteLine("Received majority of accepted responses: {0}", request);
+                    Console.WriteLine($"Lease queue is now : {_leaseQueue}");
                 }
-                _values[timestamp] = request.Value.ToList();
-
-                // Add leases to the lease queue
-                _leaseQueue.AddLeases(request.Value.ToList());
-
-                Console.WriteLine("Received majority of accepted responses: {0}", request);
             }
-
         }
         catch (Exception e)
         {

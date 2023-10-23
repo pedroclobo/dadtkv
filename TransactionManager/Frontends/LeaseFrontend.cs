@@ -40,8 +40,18 @@ public class LeaseFrontend : Frontend<LeaseService.LeaseServiceClient>
                 if (!_failureDetector.Faulty(identifier))
                 {
                     Console.WriteLine($"Requesting lease for keys {string.Join(", ", keys)} to {identifier}");
-                    client.RequestLeaseAsync(request);
-                } else
+
+                    try
+                    {
+                        client.RequestLeaseAsync(request);
+                    }
+                    catch (Grpc.Core.RpcException e)
+                    {
+                        Console.WriteLine($"Failed to send lease request for keys {string.Join(", ", keys)} to {identifier}, marking it as faulty");
+                        _failureDetector.AddFaulty(identifier);
+                    }
+                }
+                else
                 {
                     Console.WriteLine($"Skipping lease request to {identifier} because it is faulty");
                 }

@@ -41,26 +41,32 @@ public class PaxosLearnerServiceImpl : PaxosLearnerService.PaxosLearnerServiceBa
             int timestamp = request.Timestamp;
 
             // Value already accepted
-            if (_values.ContainsKey(timestamp))
+            lock (_values)
             {
-                return Task.FromResult(new Empty());
-            }
-
-            if (!_acknowledgments.ContainsKey(timestamp))
-            {
-                _acknowledgments.Add(timestamp, 0);
-            }
-            _acknowledgments[timestamp]++;
-
-            // Accept consensus value
-            if (_acknowledgments[timestamp] >= _majority)
-            {
-                _acknowledgments.Remove(timestamp);
-                if (!_values.ContainsKey(timestamp))
+                if (_values.ContainsKey(timestamp))
                 {
-                    _values.Add(timestamp, request.Value.ToList());
+                    return Task.FromResult(new Empty());
                 }
-                Console.WriteLine("Received majority of accepted responses: {0}", request);
+            }
+
+            lock (_acknowledgments)
+            {
+                if (!_acknowledgments.ContainsKey(timestamp))
+                {
+                    _acknowledgments.Add(timestamp, 0);
+                }
+                _acknowledgments[timestamp]++;
+
+                // Accept consensus value
+                if (_acknowledgments[timestamp] >= _majority)
+                {
+                    _acknowledgments.Remove(timestamp);
+                    if (!_values.ContainsKey(timestamp))
+                    {
+                        _values.Add(timestamp, request.Value.ToList());
+                    }
+                    Console.WriteLine("Received majority of accepted responses: {0}", request);
+                }
             }
         }
         catch (Exception e)

@@ -13,11 +13,14 @@ public class LeaseQueue
 
     public void AddLeases(List<Lease> leases)
     {
-        foreach (Lease lease in leases)
+        lock (_queues)
         {
-            foreach (string key in lease.Keys)
+            foreach (Lease lease in leases)
             {
-                Push(key, lease.TransactionManagerId);
+                foreach (string key in lease.Keys)
+                {
+                    Push(key, lease.TransactionManagerId);
+                }
             }
         }
     }
@@ -26,12 +29,15 @@ public class LeaseQueue
     {
         List<string> released = new();
 
-        foreach (string key in keys)
+        lock (_queues)
         {
-            string popped = Pop(key, releaser);
-            if (popped != null)
+            foreach (string key in keys)
             {
-                released.Add(popped);
+                string popped = Pop(key, releaser);
+                if (popped != null)
+                {
+                    released.Add(popped);
+                }
             }
         }
 
@@ -42,73 +48,97 @@ public class LeaseQueue
     {
         List<string> liberated = new();
 
-        foreach (string key in keys)
+        lock (_queues)
         {
-            string popped = PopIfNotOnly(key, liberator);
-            if (popped != null)
+            foreach (string key in keys)
             {
-                liberated.Add(popped);
+                string popped = PopIfNotOnly(key, liberator);
+                if (popped != null)
+                {
+                    liberated.Add(popped);
+                }
             }
         }
-
         return liberated;
     }
 
     public bool HasLeases(List<string> keys)
     {
-        foreach (string key in keys)
+        lock (_queues)
         {
-            if (!_queues.ContainsKey(key) || _queues[key].Count == 0 || _queues[key].Peek() != _identifier)
+            foreach (string key in keys)
             {
-                return false;
+                if (!_queues.ContainsKey(key) || _queues[key].Count == 0 || _queues[key].Peek() != _identifier)
+                {
+                    return false;
+                }
             }
         }
 
         return true;
     }
 
+    public override string ToString()
+    {
+        lock (_queues)
+        {
+            string res = string.Join(", ", _queues.Select(kvp => $"{kvp.Key}: {string.Join(", ", kvp.Value)}"));
+            return res == "" ? "Empty" : res + '\n';
+
+        }
+    }
+
     private void Push(string key, string holder)
     {
-        if (!_queues.ContainsKey(key))
+        lock (_queues)
         {
-            _queues.Add(key, new());
-        }
+            if (!_queues.ContainsKey(key))
+            {
+                _queues.Add(key, new());
+            }
 
-        _queues[key].Enqueue(holder);
+            _queues[key].Enqueue(holder);
+        }
     }
 
     private string Pop(string key, string holder)
     {
-        if (_queues.ContainsKey(key))
+        lock (_queues)
         {
-            if (_queues[key].Dequeue() != holder)
+            if (_queues.ContainsKey(key))
             {
-                throw new Exception("Invalid lease release");
+                if (_queues[key].Dequeue() != holder)
+                {
+                    throw new Exception("Invalid lease release");
+                }
+                else
+                {
+                    return key;
+                }
             }
-            else
-            {
-                return key;
-            }
-        }
 
-        return null;
+            return null;
+        }
     }
 
     private string PopIfNotOnly(string key, string value)
     {
-        if (_queues.ContainsKey(key))
+        lock (_queues)
         {
-            if (_queues[key].Peek() != value)
+            if (_queues.ContainsKey(key))
             {
-                throw new Exception("Invalid lease release");
+                if (_queues[key].Peek() != value)
+                {
+                    throw new Exception("Invalid lease release");
+                }
+                else if (_queues[key].Count > 1)
+                {
+                    _queues[key].Dequeue();
+                    return key;
+                }
             }
-            else if (_queues[key].Count > 1)
-            {
-                _queues[key].Dequeue();
-                return key;
-            }
-        }
 
-        return null;
+            return null;
+        }
     }
 }

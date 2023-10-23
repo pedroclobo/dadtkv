@@ -1,41 +1,50 @@
-﻿namespace LeaseManager;
+﻿using System.Security.Cryptography;
+
+namespace LeaseManager;
 public class State
 {
-    private Dictionary<string, Queue<List<string>>> _data;
+    private Queue<Lease> _data;
 
     public State()
     {
-        _data = new Dictionary<string, Queue<List<string>>>();
+        _data = new();
     }
 
+    // TODO: filter duplicate requests
     public void AddLease(string tid, List<string> keys)
     {
-        if (!_data.ContainsKey(tid))
+        lock (_data)
         {
-            _data.Add(tid, new Queue<List<string>>());
+            _data.Enqueue(new Lease { TransactionManagerId = tid, Keys = { keys } });
         }
-        _data[tid].Enqueue(keys);
-    }
-    public List<string> GetLease(string tid)
-    {
-        if (!_data.ContainsKey(tid))
-        {
-            throw new Exception("Transaction Manager not found: " + tid);
-        }
-        return _data[tid].Peek();
     }
 
-    // TODO: handle conflicts
     public List<Lease> GetLeases()
     {
         List<Lease> leases = new List<Lease>();
+        List<string> keys = new();
 
-        foreach (var tid in _data.Keys)
+        lock (_data)
         {
-            if (_data[tid].Count > 0)
+            if (_data.Count == 0)
             {
-                leases.Add(new Lease { TransactionManagerId = tid, Keys = { _data[tid].Peek() } });
-                _data[tid].Dequeue();
+                return leases;
+            }
+
+            Lease lease = _data.Dequeue();
+            leases.Add(lease);
+            keys.AddRange(lease.Keys);
+
+            while (_data.Count > 0)
+            {
+                List<string> leaseKeys = _data.Peek().Keys.ToList();
+                if (keys.Intersect(leaseKeys).Any())
+                {
+                    break;
+                }
+
+                leases.Add(_data.Dequeue());
+                keys.AddRange(leases.Last().Keys);
             }
         }
 

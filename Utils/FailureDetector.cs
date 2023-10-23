@@ -43,7 +43,7 @@ public class FailureDetector
         return _suspected[_currentTimeSlot].Contains(identifier);
     }
 
-    public void AddFailed(string identifier)
+    public void AddFaulty(string identifier)
     {
         _faulty.Add(identifier);
     }

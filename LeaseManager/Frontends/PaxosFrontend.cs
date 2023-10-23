@@ -86,7 +86,15 @@ public class PaxosFrontend : Frontend<PaxosService.PaxosServiceClient>
                 }
 
                 Console.WriteLine($"Sending prepare request {request} to {identifier}");
-                tasks.Add(Task.Run(() => client.Prepare(request)));
+
+                try
+                {
+                    tasks.Add(Task.Run(() => client.Prepare(request)));
+                } catch (Grpc.Core.RpcException e)
+                {
+                    Console.WriteLine($"Failed to send prepare request {request} to {identifier}, marking it as faulty");
+                    _failureDetector.AddFaulty(identifier);
+                }
             }
 
             // Wait for majority of positive promises
@@ -166,7 +174,15 @@ public class PaxosFrontend : Frontend<PaxosService.PaxosServiceClient>
                     continue;
                 }
                 Console.WriteLine($"Sending accept request {request} to {identifier}.");
-                tasks.Add(Task.Run(() => client.Accept(request)));
+
+                try
+                {
+                    tasks.Add(Task.Run(() => client.Accept(request)));
+                } catch (Grpc.Core.RpcException e)
+                {
+                    Console.WriteLine($"Failed to send accept request {request} to {identifier}, marking it as faulty");
+                    _failureDetector.AddFaulty(identifier);
+                }
             }
 
             // TODO: Update accepted value

@@ -23,8 +23,6 @@ public class LeaseManagementFrontend : Frontend<LeaseManagementService.LeaseMana
     {
         try
         {
-            Console.WriteLine($"Releasing leases for keys {string.Join(", ", keys)}");
-
             var request = new LeaseReleaseMessage
             {
                 SenderId = _identifier,
@@ -42,8 +40,16 @@ public class LeaseManagementFrontend : Frontend<LeaseManagementService.LeaseMana
                 }
                 else
                 {
-                    Console.WriteLine($"Releasing leases for keys {string.Join(", ", keys)}");
-                    client.ReleaseLeaseAsync(request);
+                    Console.WriteLine($"Sending lease release request for keys {string.Join(", ", keys)} to {identifier}");
+                    try
+                    {
+                        client.ReleaseLeaseAsync(request);
+                    }
+                    catch (Grpc.Core.RpcException e)
+                    {
+                        Console.WriteLine($"Failed to send lease release for keys {string.Join(", ", keys)} to {identifier}, marking it as faulty");
+                        _failureDetector.AddFaulty(identifier);
+                    }
                 }
             }
         }

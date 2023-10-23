@@ -46,7 +46,15 @@ public class URBFrontend : Frontend<URBService.URBServiceClient>
                 else
                 {
                     Console.WriteLine($"Propagating {urbRequest} to {identifier}");
-                    tasks.Add(Task.Run(() => client.URBDeliver(urbRequest)));
+                    try
+                    {
+                        tasks.Add(Task.Run(() => client.URBDeliver(urbRequest)));
+                    }
+                    catch (Grpc.Core.RpcException e)
+                    {
+                        Console.WriteLine($"Failed to propagate {urbRequest} to {identifier}, marking it as faulty");
+                        _failureDetector.AddFaulty(identifier);
+                    }
                 }
             }
 

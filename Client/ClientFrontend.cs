@@ -47,7 +47,7 @@ public class ClientFrontend : Frontend<DADTKVClientService.DADTKVClientServiceCl
         catch (Grpc.Core.RpcException e)
         {
             Console.WriteLine($"Failed to send request to {GetTM()}, marking it as failed");
-            _failureDetector.AddFailed(GetTM());
+            _failureDetector.AddFaulty(GetTM());
 
             switchTM();
             Console.WriteLine($"Retrying with {GetTM()}");
@@ -80,7 +80,7 @@ public class ClientFrontend : Frontend<DADTKVClientService.DADTKVClientServiceCl
         catch (Grpc.Core.RpcException e)
         {
             Console.WriteLine($"Failed to send request to {GetTM()}, marking it as failed");
-            _failureDetector.AddFailed(GetTM());
+            _failureDetector.AddFaulty(GetTM());
 
             switchTM();
             Console.WriteLine($"Retrying with {GetTM()}");
