@@ -35,7 +35,7 @@ public class URBServiceImpl : URBService.URBServiceBase
                 }
             }
 
-            return Task.FromResult(new URBResponse { SenderId = _identifier, UpdateId = request.UpdateId });
+            return Task.FromResult(new URBResponse { SenderId = _identifier });
         }
         catch (Exception e)
         {

@@ -6,18 +6,11 @@ service URBService {
 	rpc URBDeliver(URBRequest) returns (URBResponse);
 }
 
-message UpdateId {
-	string transactionManagerId = 1;
-	int32 sequenceNumber = 2;
-}
-
 message URBRequest {
 	string senderId = 1;
-	UpdateId updateId = 2;
-	repeated DadInt write = 3;
+	repeated DadInt write = 2;
 }
 
 message URBResponse {
 	string senderId = 1;
-	UpdateId updateId = 2;
 }

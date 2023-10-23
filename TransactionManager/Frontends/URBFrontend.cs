@@ -26,18 +26,10 @@ public class URBFrontend : Frontend<URBService.URBServiceClient>
     {
         try
         {
-            var updateId = new UpdateId
-            {
-                TransactionManagerId = _identifier,
-                SequenceNumber = 0,
-            };
-            var updateIdentifier = UpdateIdentifier.FromProtobuf(updateId);
-
             // TODO: originate updateId, it is hardcoded to 0
             URBRequest urbRequest = new URBRequest
             {
                 SenderId = _identifier,
-                UpdateId = updateId,
                 Write = { request.Write },
             };
 
