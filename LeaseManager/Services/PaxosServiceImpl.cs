@@ -30,7 +30,7 @@ public class PaxosServiceImpl : PaxosService.PaxosServiceBase
     {
         try
         {
-            if (_failureDetector.Suspected(request.SenderId))
+            if (!_failureDetector.CanContact(request.SenderId))
             {
                 Console.WriteLine($"Ignoring prepare request: {request}");
                 return Task.FromResult(new PromiseResponse { SenderId = _identifier, HasValue = false, Nack = true }); ;
@@ -77,7 +77,7 @@ public class PaxosServiceImpl : PaxosService.PaxosServiceBase
             Console.WriteLine(e.Message);
         }
 
-        return Task.FromResult(new PromiseResponse { });
+        return Task.FromResult(new PromiseResponse { SenderId = _identifier });
 
     }
 
@@ -86,7 +86,7 @@ public class PaxosServiceImpl : PaxosService.PaxosServiceBase
     {
         try
         {
-            if (_failureDetector.Suspected(request.SenderId))
+            if (!_failureDetector.CanContact(request.SenderId))
             {
                 Console.WriteLine($"Ignoring accept request: {request}");
                 return Task.FromResult(new Empty());

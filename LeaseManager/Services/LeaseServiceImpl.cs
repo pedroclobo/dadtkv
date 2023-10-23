@@ -16,6 +16,7 @@ public class LeaseServiceImpl : LeaseService.LeaseServiceBase
         {
             Console.WriteLine($"Received lease request {request}");
             _state.AddLease(request.TransactionManagerId, request.Keys.ToList());
+            Console.WriteLine($"Current queue is {_state}");
         }
         catch (Exception e)
         {

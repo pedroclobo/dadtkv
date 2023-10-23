@@ -14,6 +14,7 @@ public class PaxosLearnerFrontend : Frontend<PaxosLearnerService.PaxosLearnerSer
 
     public void Accepted(AcceptedResponse response)
     {
+        response.SenderId = _identifier;
         try
         {
             foreach (var pair in GetClients())
@@ -21,7 +22,7 @@ public class PaxosLearnerFrontend : Frontend<PaxosLearnerService.PaxosLearnerSer
                 var identifier = pair.Item1;
                 var client = pair.Item2;
 
-                if (_failureDetector.Faulty(identifier) || _failureDetector.Suspected(identifier))
+                if (!_failureDetector.CanContact(identifier))
                 {
                     Console.WriteLine($"Skipping sending accepted response to {identifier}");
                     continue;
@@ -32,7 +33,7 @@ public class PaxosLearnerFrontend : Frontend<PaxosLearnerService.PaxosLearnerSer
                 {
                     client.Accepted(response);
                 }
-                catch (Grpc.Core.RpcException e)
+                catch (Grpc.Core.RpcException)
                 {
                     Console.WriteLine($"Failed to send accept response {response} to {identifier}, marking it as faulty");
                     _failureDetector.AddFaulty(identifier);

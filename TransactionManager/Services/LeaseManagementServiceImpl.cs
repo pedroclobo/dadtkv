@@ -19,7 +19,7 @@ public class LeaseManagementServiceImpl: LeaseManagementService.LeaseManagementS
 
     public override Task<Empty> ReleaseLease(LeaseReleaseMessage request, ServerCallContext context)
     {
-        if (_failureDetector.Faulty(request.SenderId) || _failureDetector.Suspected(request.SenderId))
+        if (!_failureDetector.CanContact(request.SenderId))
         {
             Console.WriteLine($"Ignoring lease release request: {request}");
             return Task.FromResult(new Empty());

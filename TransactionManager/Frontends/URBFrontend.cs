@@ -8,6 +8,9 @@ public class URBFrontend : Frontend<URBService.URBServiceClient>
     private int _majority;
     private FailureDetector _failureDetector;
 
+    // Timeout in seconds
+    private static int TIMEOUT = 5;
+
     public URBFrontend(string identifier, Dictionary<string, Uri> serverURLs, FailureDetector failureDetector) : base(serverURLs)
     {
         _identifier = identifier;
@@ -22,24 +25,24 @@ public class URBFrontend : Frontend<URBService.URBServiceClient>
         return new URBService.URBServiceClient(channel);
     }
 
-    public async Task URBDeliver(TxSubmitRequest request)
+    public async Task<bool> URBDeliver(TxSubmitRequest request)
     {
         try
         {
-            // TODO: originate updateId, it is hardcoded to 0
             URBRequest urbRequest = new URBRequest
             {
                 SenderId = _identifier,
                 Write = { request.Write },
             };
 
+            // Send request to propagate state to all servers
             List<Task<URBResponse>> tasks = new List<Task<URBResponse>>();
             foreach (var pair in GetClients())
             {
                 string identifier = pair.Item1;
                 var client = pair.Item2;
 
-                if (_failureDetector.Faulty(identifier) || _failureDetector.Suspected(identifier))
+                if (!_failureDetector.CanContact(identifier))
                 {
                     Console.WriteLine($"Skipping propagation of {urbRequest} to {identifier}");
                 }
@@ -50,7 +53,7 @@ public class URBFrontend : Frontend<URBService.URBServiceClient>
                     {
                         tasks.Add(Task.Run(() => client.URBDeliver(urbRequest)));
                     }
-                    catch (Grpc.Core.RpcException e)
+                    catch (Grpc.Core.RpcException)
                     {
                         Console.WriteLine($"Failed to propagate {urbRequest} to {identifier}, marking it as faulty");
                         _failureDetector.AddFaulty(identifier);
@@ -58,23 +61,33 @@ public class URBFrontend : Frontend<URBService.URBServiceClient>
                 }
             }
 
-            // TODO: timeout
             // Wait for majority of acknowledgements
-            while (tasks.Count(t => t.IsCompleted) < _majority)
+            // Abort if timeout is reached
+            using (var cts = new CancellationTokenSource(TimeSpan.FromSeconds(TIMEOUT)))
             {
-                Task<URBResponse> completedTask = await Task.WhenAny(tasks);
-            }
+                while (tasks.Count(t => t.IsCompleted) < _majority)
+                {
+                    Task<URBResponse> completedTask = await Task.WhenAny(tasks);
+                    if (completedTask.IsCompleted)
+                    {
+                        Console.WriteLine($"Received ACK from {completedTask.Result.SenderId}");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Timeout reached, aborting");
+                        cts.Cancel();
+                        return false;
+                    }
+                }
 
-            var senderIds = tasks.Where(t => t.IsCompleted).Select(t => t.Result.SenderId).ToList();
-            foreach (var senderId in senderIds)
-            {
-                Console.WriteLine($"Received ACK from {senderId}");
+                Console.WriteLine($"Got majority (#{_majority} ACKs)");
             }
-            Console.WriteLine($"Got majority (#{_majority} ACKs)");
         }
         catch (Exception e)
         {
             Console.WriteLine(e.Message);
         }
+
+        return true;
     }
 }

@@ -44,7 +44,7 @@ public class ClientFrontend : Frontend<DADTKVClientService.DADTKVClientServiceCl
 
             return result;
         }
-        catch (Grpc.Core.RpcException e)
+        catch (Grpc.Core.RpcException)
         {
             Console.WriteLine($"Failed to send request to {GetTM()}, marking it as failed");
             _failureDetector.AddFaulty(GetTM());
@@ -77,7 +77,7 @@ public class ClientFrontend : Frontend<DADTKVClientService.DADTKVClientServiceCl
 
             return (await Task.WhenAll(tasks)).ToList();
         }
-        catch (Grpc.Core.RpcException e)
+        catch (Grpc.Core.RpcException)
         {
             Console.WriteLine($"Failed to send request to {GetTM()}, marking it as failed");
             _failureDetector.AddFaulty(GetTM());

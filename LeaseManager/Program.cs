@@ -70,31 +70,31 @@ public class LeaseManager
             {
                 if (currentTimeSlot > timeSlots)
                 {
-                    Console.WriteLine("Time slots expired! Shutting down!");
-                    Console.WriteLine("Press any key to exit...");
-
                     paxosFrontend.Shutdown();
                     paxosLearnerFrontend.Shutdown();
                     server.ShutdownAsync().Wait();
 
                     timer.Dispose();
 
+                    Console.WriteLine("Time slots expired! Shutting down!");
+                    Console.WriteLine("Press any key to exit...");
                     Console.ReadLine();
+
                     Environment.Exit(0);
                 }
 
                 if (failureDetector.AmIFaulty())
                 {
-                    Console.WriteLine("I am faulty! Shutting down!");
-                    Console.WriteLine("Press any key to exit...");
-
                     paxosFrontend.Shutdown();
                     paxosLearnerFrontend.Shutdown();
                     server.ShutdownAsync().Wait();
 
                     timer.Dispose();
 
+                    Console.WriteLine("I am faulty! Shutting down!");
+                    Console.WriteLine("Press any key to exit...");
                     Console.ReadLine();
+
                     Environment.Exit(0);
                 }
 

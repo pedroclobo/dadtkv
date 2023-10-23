@@ -1,6 +1,4 @@
-﻿using System.Security.Cryptography;
-
-namespace LeaseManager;
+﻿namespace LeaseManager;
 public class State
 {
     private Queue<Lease> _data;
@@ -49,5 +47,13 @@ public class State
         }
 
         return leases;
+    }
+
+    public override string ToString()
+    {
+        lock (_data)
+        {
+            return String.Join(", ", _data.Select(lease => $"{lease.TransactionManagerId}: {string.Join(", ", lease.Keys)}"));
+        }
     }
 }

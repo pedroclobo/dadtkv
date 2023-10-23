@@ -32,7 +32,7 @@ public class PaxosLearnerServiceImpl : PaxosLearnerService.PaxosLearnerServiceBa
     {
         try
         {
-            if (_failureDetector.Suspected(request.SenderId))
+            if (!_failureDetector.CanContact(request.SenderId))
             {
                 Console.WriteLine($"Ignoring accepted response from {request.SenderId}");
                 return Task.FromResult(new Empty());
@@ -65,7 +65,7 @@ public class PaxosLearnerServiceImpl : PaxosLearnerService.PaxosLearnerServiceBa
                     {
                         _values.Add(timestamp, request.Value.ToList());
                     }
-                    Console.WriteLine("Received majority of accepted responses: {0}", request);
+                    Console.WriteLine("Received majority of accepted responses");
                 }
             }
         }

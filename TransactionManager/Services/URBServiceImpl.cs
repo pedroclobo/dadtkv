@@ -17,10 +17,10 @@ public class URBServiceImpl : URBService.URBServiceBase
     {
         try
         {
-            if (_failureDetector.Suspected(request.SenderId))
+            if (!_failureDetector.CanContact(request.SenderId))
             {
                 Console.WriteLine($"Ignoring URB broadcast from {request.SenderId}");
-                return Task.FromResult(new URBResponse { });
+                return Task.FromResult(new URBResponse { SenderId = _identifier });
             }
 
             Console.WriteLine("Received URB broadcast from {0}", request.SenderId);

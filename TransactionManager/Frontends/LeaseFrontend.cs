@@ -45,7 +45,7 @@ public class LeaseFrontend : Frontend<LeaseService.LeaseServiceClient>
                     {
                         client.RequestLeaseAsync(request);
                     }
-                    catch (Grpc.Core.RpcException e)
+                    catch (Grpc.Core.RpcException)
                     {
                         Console.WriteLine($"Failed to send lease request for keys {string.Join(", ", keys)} to {identifier}, marking it as faulty");
                         _failureDetector.AddFaulty(identifier);

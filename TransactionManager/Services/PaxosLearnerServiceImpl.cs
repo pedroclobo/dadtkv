@@ -1,5 +1,6 @@
 ﻿using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
+using Utils;
 
 namespace TransactionManager.Services;
 
@@ -62,7 +63,7 @@ public class PaxosLearnerServiceImpl : PaxosLearnerService.PaxosLearnerServiceBa
                     // Add leases to the lease queue
                     _leaseQueue.AddLeases(request.Value.ToList());
 
-                    Console.WriteLine("Received majority of accepted responses: {0}", request);
+                    Console.WriteLine("Received majority of accepted responses");
                     Console.WriteLine($"Lease queue is now : {_leaseQueue}");
                 }
             }

@@ -1,4 +1,5 @@
 ﻿using Google.Protobuf.Collections;
+using Grpc.Core;
 
 namespace Utils;
 
@@ -6,7 +7,7 @@ public class FailureDetector
 {
     private string _identifier;
     private int _currentTimeSlot;
-    private Dictionary<int, List<string>> _suspected;
+    private Dictionary<(int, string), List<string>> _suspected;
     private List<string> _faulty;
     private int? _faultyTimeslot; // timeslot in which the current process fails
     private List<string> _leaseManagerIdentifiers;
@@ -16,21 +17,28 @@ public class FailureDetector
         _identifier = identifier;
         _currentTimeSlot = 1;
 
+        _leaseManagerIdentifiers = parser.LeaseManagerIdentifiers();
+        _leaseManagerIdentifiers.Sort();
+
         _suspected = new();
         _faultyTimeslot = null;
+
+        List<string> servers = parser.TransactionManagerIdentifiers();
+        servers.AddRange(parser.LeaseManagerIdentifiers());
+
         for (int slot = 1; slot <= parser.TimeSlots; slot++)
         {
-            _suspected[slot] = parser.Suspected(_identifier, slot);
-            if (parser.Failed(_identifier, slot))
+            foreach (var id in servers)
             {
-                _faultyTimeslot = slot;
+                _suspected[(slot, id)] = parser.Suspected(id, slot);
+                if (id == _identifier && parser.Failed(_identifier, slot))
+                {
+                    _faultyTimeslot = slot;
+                }
             }
         }
 
         _faulty = new();
-
-        _leaseManagerIdentifiers = parser.LeaseManagerIdentifiers();
-        _leaseManagerIdentifiers.Sort();
     }
 
     public void SetTimeSlot(int slot)
@@ -38,9 +46,9 @@ public class FailureDetector
         _currentTimeSlot = slot;
     }
 
-    public bool Suspected(string identifier)
+    public bool CanContact(string identifier)
     {
-        return _suspected[_currentTimeSlot].Contains(identifier);
+        return !_suspected[(_currentTimeSlot, _identifier)].Contains(identifier) && !_suspected[(_currentTimeSlot, identifier)].Contains(_identifier) && !Faulty(identifier);
     }
 
     public void AddFaulty(string identifier)
@@ -61,7 +69,7 @@ public class FailureDetector
     public bool AmILeader()
     {
         int index = 0;
-        while (Suspected(_leaseManagerIdentifiers[index]))
+        while (_suspected[(_currentTimeSlot, _identifier)].Contains(_leaseManagerIdentifiers[index]))
         {
             index = (index + 1) % _leaseManagerIdentifiers.Count;
         }

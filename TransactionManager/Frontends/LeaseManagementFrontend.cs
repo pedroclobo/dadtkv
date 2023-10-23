@@ -34,7 +34,7 @@ public class LeaseManagementFrontend : Frontend<LeaseManagementService.LeaseMana
                 string identifier = pair.Item1;
                 var client = pair.Item2;
 
-                if (_failureDetector.Faulty(request.SenderId) || _failureDetector.Suspected(request.SenderId))
+                if (!_failureDetector.CanContact(request.SenderId))
                 {
                     Console.WriteLine($"Skipping lease release to {identifier}");
                 }
@@ -45,7 +45,7 @@ public class LeaseManagementFrontend : Frontend<LeaseManagementService.LeaseMana
                     {
                         client.ReleaseLeaseAsync(request);
                     }
-                    catch (Grpc.Core.RpcException e)
+                    catch (Grpc.Core.RpcException)
                     {
                         Console.WriteLine($"Failed to send lease release for keys {string.Join(", ", keys)} to {identifier}, marking it as faulty");
                         _failureDetector.AddFaulty(identifier);

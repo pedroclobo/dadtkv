@@ -1,5 +1,6 @@
 ﻿using Google.Protobuf.WellKnownTypes;
 using Grpc.Net.Client;
+using System.Diagnostics;
 using Utils;
 
 namespace LeaseManager.Frontends;
@@ -79,7 +80,7 @@ public class PaxosFrontend : Frontend<PaxosService.PaxosServiceClient>
                 string identifier = pair.Item1;
                 var client = pair.Item2;
 
-                if (_failureDetector.Faulty(identifier) || _failureDetector.Suspected(identifier))
+                if (!_failureDetector.CanContact(identifier))
                 {
                     Console.WriteLine($"Skipping prepare request to {identifier}");
                     continue;
@@ -90,7 +91,7 @@ public class PaxosFrontend : Frontend<PaxosService.PaxosServiceClient>
                 try
                 {
                     tasks.Add(Task.Run(() => client.Prepare(request)));
-                } catch (Grpc.Core.RpcException e)
+                } catch (Grpc.Core.RpcException)
                 {
                     Console.WriteLine($"Failed to send prepare request {request} to {identifier}, marking it as faulty");
                     _failureDetector.AddFaulty(identifier);
@@ -101,15 +102,23 @@ public class PaxosFrontend : Frontend<PaxosService.PaxosServiceClient>
             int positive = 0;
             while (positive < _majority)
             {
-                Task<PromiseResponse> completedTask = await Task.WhenAny(tasks);
-
-                Console.WriteLine($"Received promise response {completedTask.Result}");
+                Task<PromiseResponse> completedTask = null;
+                try
+                {
+                    completedTask = await Task.WhenAny(tasks);
+                } catch (Exception e)
+                {
+                    Console.WriteLine(e.Message);
+                }
 
                 if (completedTask.IsCanceled)
                 {
                     Console.WriteLine("Prepare request timed out");
                     return false;
                 }
+
+                Console.WriteLine($"Received promise response {completedTask.Result}");
+
                 if (completedTask.Result.Nack)
                 {
                     Console.WriteLine($"Received NACK {completedTask.Result}");
@@ -136,7 +145,11 @@ public class PaxosFrontend : Frontend<PaxosService.PaxosServiceClient>
         }
         catch (Exception e)
         {
+            var st = new StackTrace(e, true);
+            var frame = st.GetFrame(0);
+            var line = frame.GetFileLineNumber();
             Console.WriteLine(e.Message);
+            Console.WriteLine($"{line}: {e.Message}");
         }
 
         return false;
@@ -168,7 +181,7 @@ public class PaxosFrontend : Frontend<PaxosService.PaxosServiceClient>
                 var identifier = pair.Item1;
                 var client = pair.Item2;
 
-                if (_failureDetector.Faulty(identifier) || _failureDetector.Suspected(identifier))
+                if (!_failureDetector.CanContact(identifier))
                 {
                     Console.WriteLine($"Skipping sending accept request to {identifier}");
                     continue;
@@ -178,7 +191,7 @@ public class PaxosFrontend : Frontend<PaxosService.PaxosServiceClient>
                 try
                 {
                     tasks.Add(Task.Run(() => client.Accept(request)));
-                } catch (Grpc.Core.RpcException e)
+                } catch (Grpc.Core.RpcException)
                 {
                     Console.WriteLine($"Failed to send accept request {request} to {identifier}, marking it as faulty");
                     _failureDetector.AddFaulty(identifier);

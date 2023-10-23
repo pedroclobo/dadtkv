@@ -36,12 +36,18 @@ public class DADTKVClientServiceImpl : DADTKVClientService.DADTKVClientServiceBa
             Console.WriteLine("Received request {0}", request);
 
             // Ask for leases if needed
-            lock (_leaseQueue)
+            if (!_leaseQueue.HasLeases(keys))
             {
-                if (!_leaseQueue.HasLeases(keys))
-                {
-                    _leaseFrontend.RequestLease(keys);
-                }
+                _leaseFrontend.RequestLease(keys);
+            }
+
+            // Propagate update to other servers
+            // Only propagate write operations
+            if (request.Write.Count > 0 && !await _urbFrontend.URBDeliver(request))
+            {
+                Console.WriteLine("Failed to propagate request, aborting");
+                _leaseQueue.LiberateLeases(_identifier, keys);
+                return new TxSubmitResponse();
             }
 
             // TODO: Wait for key leases
@@ -53,36 +59,31 @@ public class DADTKVClientServiceImpl : DADTKVClientService.DADTKVClientServiceBa
 
             lock (_leaseQueue)
             {
-                // Only propagate write operations
-                // TODO: await
-                if (request.Write.Count > 0)
+                if (_leaseQueue.HasLeases(keys))
                 {
-                    _urbFrontend.URBDeliver(request);
+                    // Perform Writes
+                    foreach (var dadInt in request.Write)
+                    {
+                        _state.Set(dadInt.Key, dadInt.Value);
+                    }
+
+                    // Perform Reads
+                    var values = new List<DadInt>();
+                    foreach (var key in request.Read)
+                    {
+                        values.Add(new DadInt { Key = key, Value = _state.Get(key) });
+                    }
+
+                    // Liberate leases if someone else wants them
+                    if (_leaseQueue.LiberateLeases(_identifier, keys).Count > 0)
+                    {
+                        _leaseManagementFrontend.ReleaseLeases(keys);
+                    }
+
+                    Console.WriteLine("Sending reply to client");
+
+                    return new TxSubmitResponse { Values = { values } };
                 }
-
-                // Perform Writes
-                foreach (var dadInt in request.Write)
-                {
-                    _state.Set(dadInt.Key, dadInt.Value);
-                }
-
-                // Perform Reads
-                var values = new List<DadInt>();
-                foreach (var key in request.Read)
-                {
-                    values.Add(new DadInt { Key = key, Value = _state.Get(key) });
-                }
-
-                // Liberate leases if someone else wants them
-                List<string> liberatedLeases = _leaseQueue.LiberateLeases(_identifier, keys);
-                if (liberatedLeases.Count > 0)
-                {
-                    _leaseManagementFrontend.ReleaseLeases(liberatedLeases);
-                }
-
-                Console.WriteLine("Sending reply to client");
-
-                return new TxSubmitResponse { Values = { values } };
             }
         }
         catch (Exception e)
